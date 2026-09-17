@@ -1,0 +1,109 @@
+[
+  {
+    "file": "luck.png",
+    "url": "https://piston-data.mojang.com/v1/objects/a7e5a6024bfd3cd614625aa05629adf760020304/client.jar",
+    "member": "assets/minecraft/textures/mob_effect/luck.png",
+    "sha256": "6289a3a1c99042f5b98cc7f635ac1a4c1d313e88de71667690452fb9095d0b18"
+  },
+  {
+    "file": "milk_bucket.png",
+    "url": "https://piston-data.mojang.com/v1/objects/a7e5a6024bfd3cd614625aa05629adf760020304/client.jar",
+    "member": "assets/minecraft/textures/item/milk_bucket.png",
+    "sha256": "4fe54fe49384a16fead5dec458363eb6656660cde88e53eb1c4adbee3c88a6a1"
+  },
+  {
+    "file": "potion.png",
+    "url": "https://piston-data.mojang.com/v1/objects/a7e5a6024bfd3cd614625aa05629adf760020304/client.jar",
+    "member": "assets/minecraft/textures/item/potion.png",
+    "sha256": "6a09a39bb6c41bc92bd5eca1f51caf5b582a85f68206b164476c8e14a4669416"
+  },
+  {
+    "file": "iron_sword.png",
+    "url": "https://piston-data.mojang.com/v1/objects/a7e5a6024bfd3cd614625aa05629adf760020304/client.jar",
+    "member": "assets/minecraft/textures/item/iron_sword.png",
+    "sha256": "ed1fa2f83955583e70a19791455d13989e8bd93b1d7240e775a57141022bed6b"
+  },
+  {
+    "file": "diamond_sword.png",
+    "url": "https://piston-data.mojang.com/v1/objects/a7e5a6024bfd3cd614625aa05629adf760020304/client.jar",
+    "member": "assets/minecraft/textures/item/diamond_sword.png",
+    "sha256": "5634a8cb79a70beb306210de9ec492fc2d4dc8f739372683e9882ef06bf63008"
+  },
+  {
+    "file": "enchanted_book.png",
+    "url": "https://piston-data.mojang.com/v1/objects/a7e5a6024bfd3cd614625aa05629adf760020304/client.jar",
+    "member": "assets/minecraft/textures/item/enchanted_book.png",
+    "sha256": "f96da147fcf6f373df00ab5181043ea0c76af4ba7025f43f377f678ac466fb43"
+  },
+  {
+    "file": "potion_overlay.png",
+    "url": "https://piston-data.mojang.com/v1/objects/a7e5a6024bfd3cd614625aa05629adf760020304/client.jar",
+    "member": "assets/minecraft/textures/item/potion_overlay.png",
+    "sha256": "a734ecf66d6a09767592c6b38c453854290d47c987ea122712bad37dca9683e9"
+  },
+  {
+    "file": "grass_block_top.png",
+    "url": "https://piston-data.mojang.com/v1/objects/a7e5a6024bfd3cd614625aa05629adf760020304/client.jar",
+    "member": "assets/minecraft/textures/block/grass_block_top.png",
+    "sha256": "52f44b64ce884a13dfe35e4b4da2e35898b790dd4d7a5ea536f1b0c0d56d29b4"
+  },
+  {
+    "file": "grass_block_side.png",
+    "url": "https://piston-data.mojang.com/v1/objects/a7e5a6024bfd3cd614625aa05629adf760020304/client.jar",
+    "member": "assets/minecraft/textures/block/grass_block_side.png",
+    "sha256": "ab572ac7ebd373abdeb961de1f3cba0afcd91e1acb700745ece4f719790bae3d"
+  },
+  {
+    "file": "grass_block_side_overlay.png",
+    "url": "https://piston-data.mojang.com/v1/objects/a7e5a6024bfd3cd614625aa05629adf760020304/client.jar",
+    "member": "assets/minecraft/textures/block/grass_block_side_overlay.png",
+    "sha256": "43d98318407d9d122b83468cf183d18722e548c2144f9c2ffe2021b5c3e770e0"
+  },
+  {
+    "file": "steve.png",
+    "url": "https://piston-data.mojang.com/v1/objects/a7e5a6024bfd3cd614625aa05629adf760020304/client.jar",
+    "member": "assets/minecraft/textures/entity/player/wide/steve.png",
+    "sha256": "d876e0c88f4b3de71040966ed94a614f315b888592b520b993399fd2738418d0"
+  },
+  {
+    "file": "half.png",
+    "url": "https://piston-data.mojang.com/v1/objects/a7e5a6024bfd3cd614625aa05629adf760020304/client.jar",
+    "member": "assets/minecraft/textures/gui/sprites/hud/heart/half.png",
+    "sha256": "f6095a2446c8eb94e82e632a57a7376fe36cfca6fc4915445be02c2d6dec8443"
+  },
+  {
+    "file": "full.png",
+    "url": "https://piston-data.mojang.com/v1/objects/a7e5a6024bfd3cd614625aa05629adf760020304/client.jar",
+    "member": "assets/minecraft/textures/gui/sprites/hud/heart/full.png",
+    "sha256": "fbc682e09ae677d82fb9bd638eae2fef0e75d3dcb2f556ec9d693fc1ba1321c9"
+  },
+  {
+    "file": "potion.png",
+    "url": "https://piston-data.mojang.com/v1/objects/a7e5a6024bfd3cd614625aa05629adf760020304/client.jar",
+    "member": "assets/minecraft/textures/gui/sprites/container/slot/potion.png",
+    "sha256": "bbcc06031d8038d1343ea43c07d8f2958c551f6e3a63b7d56e64281d5a3056be"
+  },
+  {
+    "file": "gear.png",
+    "url": "https://launcher.mojang.com/v1/objects/e5838277b3bb193e58408713f1fc6e005c5f3c0c/client.jar",
+    "member": "misc/gear.png",
+    "sha256": "a1cf16ff7ffbac149704065231da200add4d8ec959c108c219b3b2f1a7fee46f"
+  },
+  {
+    "file": "gearmiddle.png",
+    "url": "https://launcher.mojang.com/v1/objects/e5838277b3bb193e58408713f1fc6e005c5f3c0c/client.jar",
+    "member": "misc/gearmiddle.png",
+    "sha256": "b7188fd2d8edbed7b742b15ab1a94424ffeb9625b63a043c56691566b8e2dc92"
+  },
+  {
+    "file": "supplied-skin.png",
+    "source": "/home/thomas/Downloads/6b252bfa5cbcdd98.png",
+    "sha256": "e9ebbeece495d9c96040e235dc865fdb1a530cf6a2243a6c8fcec22e72f03e3f"
+  },
+  {
+    "file": "villager.png",
+    "url": "https://piston-data.mojang.com/v1/objects/a7e5a6024bfd3cd614625aa05629adf760020304/client.jar",
+    "member": "assets/minecraft/textures/entity/villager/villager.png",
+    "sha256": "dca7cc3e7184572764faac9f4e517efbb47c0b0783ffa0c561a99afc7e3b77b9"
+  }
+]

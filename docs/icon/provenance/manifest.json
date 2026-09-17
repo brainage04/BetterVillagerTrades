@@ -1,0 +1,36 @@
+{
+  "entries": [
+    {
+      "project": "BetterVillagerTrades",
+      "label": "Luck 16x16 content doubled behind FULL 8x10 villager face plus nose, doubled and centered; final 32x32.",
+      "path": "pixel/better-villager-trades.png",
+      "method": "Pillow deterministic native-pixel composition",
+      "source": "Official Java 1.21.4 client textures; see provenance.json",
+      "notes": "Luck 16x16 content doubled behind FULL 8x10 villager face plus nose, doubled and centered; final 32x32."
+    },
+    {
+      "project": "BrainageServerUtils",
+      "label": "Historical vanilla gear frame 16x16 doubled behind supplied skin face 8x8 doubled; centered 32x32.",
+      "path": "pixel/brainage-server-utils.png",
+      "method": "Pillow deterministic native-pixel composition",
+      "source": "Mojang Alpha a1.0.4 jar retained misc/gear.png + misc/gearmiddle.png; supplied skin; provenance.json",
+      "notes": "Historical vanilla gear frame 16x16 doubled behind supplied skin face 8x8 doubled; centered 32x32."
+    },
+    {
+      "project": "MilkablePlayers",
+      "label": "Milk bucket doubled to 32x32; Steve face doubled and centered in front.",
+      "path": "pixel/milkable-players.png",
+      "method": "Pillow deterministic native-pixel composition",
+      "source": "Official Java 1.21.4 client textures; see provenance.json",
+      "notes": "Milk bucket doubled to 32x32; Steve face doubled and centered in front."
+    },
+    {
+      "project": "NPCAddons",
+      "label": "Supplied 8x8 skin face doubled; native 8x8 plus at top-right; final16x16.",
+      "path": "pixel/npc-addons-plus-8.png",
+      "method": "Pillow deterministic native-pixel composition",
+      "source": "Authorized supplied skin + deterministic pixel plus",
+      "notes": "Supplied 8x8 skin face doubled; native 8x8 plus at top-right; final16x16."
+    }
+  ]
+}
