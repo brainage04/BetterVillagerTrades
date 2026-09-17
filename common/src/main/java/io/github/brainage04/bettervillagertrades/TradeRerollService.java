@@ -48,7 +48,7 @@ public final class TradeRerollService {
 	}
 
 	public static boolean reroll(ServerPlayer player, Villager villager, boolean sendFeedback) {
-		Component denial = eligibilityFailure(villager);
+		Component denial = eligibilityFailure(player, villager);
 		if (denial != null) {
 			if (sendFeedback) player.sendSystemMessage(denial);
 			return false;
@@ -87,7 +87,10 @@ public final class TradeRerollService {
 		return true;
 	}
 
-	private static Component eligibilityFailure(Villager villager) {
+	private static Component eligibilityFailure(ServerPlayer player, Villager villager) {
+		if (villager.getTradingPlayer() != null && villager.getTradingPlayer() != player) {
+			return Component.literal("This villager is currently trading with another player.");
+		}
 		if (villager.isBaby()) {
 			return Component.literal("Baby villagers do not have trades to reroll.");
 		}
