@@ -6,6 +6,8 @@ license="MIT"
 modId="bettervillagertrades"
 version="${version}"
 displayName="BetterVillagerTrades"
+logoFile="assets/bettervillagertrades/icon.png"
+logoBlur=false
 authors="brainage04"
 description='''Rerolls untraded villagers, protects player-selected trades, and guarantees max-level enchantment outputs.'''
 [[mixins]]
