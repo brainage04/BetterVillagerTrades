@@ -34,7 +34,7 @@ public final class BetterVillagerTradesNeoForge {
 		NeoForge.EVENT_BUS.addListener(this::onEntityInteract);
 	}
 
-	private void onEntityInteract(PlayerInteractEvent.EntityInteractSpecific event) {
+	private void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
 		if (event.getLevel().isClientSide()) {
 			return;
 		}
