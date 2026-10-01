@@ -1,8 +1,8 @@
 {
 	"schemaVersion": 1,
-	"id": "bettervillagertrades-gametest",
+	"id": "${mod_id}-gametest",
 	"version": "${mod_version}",
-	"name": "${mod_name} GameTests",
+	"name": "${mod_name} Game Tests",
 	"icon": "assets/bettervillagertrades/icon.png",
 	"environment": "*",
 	"entrypoints": {

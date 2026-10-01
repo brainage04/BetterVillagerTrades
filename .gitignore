@@ -30,7 +30,10 @@ bin/
 
 # fabric
 
-run/
+.fabric/
+mods/
+**/run/*
+!**/run/options.txt
 logs/
 
 # java
@@ -39,5 +42,7 @@ hs_err_*.log
 replay_*.log
 *.hprof
 *.jfr
+
+.env
 
 .codex

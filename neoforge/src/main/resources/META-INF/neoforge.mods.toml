@@ -1,12 +1,14 @@
 modLoader="javafml"
 loaderVersion="[11,)"
 license="MIT"
+issueTrackerURL="https://github.com/brainage04/BetterVillagerTrades/issues"
 
 [[mods]]
 modId="bettervillagertrades"
 version="${version}"
 displayName="BetterVillagerTrades"
 iconFile="assets/bettervillagertrades/icon.png"
+displayURL="https://github.com/brainage04/BetterVillagerTrades"
 logoBlur=false
 authors="brainage04"
 description='''Rerolls untraded villagers, protects player-selected trades, and guarantees max-level enchantment outputs.'''

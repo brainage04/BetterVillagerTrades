@@ -55,3 +55,7 @@ Install exactly one matching server JAR: the Fabric JAR with Fabric API, or the 
 This release replaces MaxVillagerTrades. Remove the old JAR before installing BetterVillagerTrades; the new mod ID is `bettervillagertrades`.
 
 Run `./gradlew build` to emit both loader artifacts under `build/libs`.
+
+## Publishing
+
+Release automation is documented in [docs/RELEASE.md](docs/RELEASE.md). Optional Modrinth publishing is documented in [docs/MODRINTH.md](docs/MODRINTH.md).
