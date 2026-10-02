@@ -2,8 +2,12 @@
 
 ## What this is
 
-The mod's icon: `icon.png` — 32x32 RGBA PNG, 579 bytes,
-sha256 `5a35dfbc7624e0eb635e3f1efe0326c98f9563fc3a3ef6649b9033bd2cf1fecf`.
+The mod's icon: `icon.png` — 512x512 RGBA PNG, 3 011 bytes,
+sha256 `8ff7bda71439ddb312a827510d956a6490379de762e0f3a1b59af5d718b0d965`. It is the native
+32x32 composition described below enlarged **16x with NEAREST** (the icon rule of 2026-10-02:
+square, a power of two, 512 or 1024 px). The mod ships byte-identical copies at
+`common/src/main/resources/assets/bettervillagertrades/icon.png` and
+`fabric/src/gametest/resources/assets/bettervillagertrades/icon.png`.
 
 Two layers: behind, the vanilla **Luck** mob-effect icon enlarged 2x; in front, a **villager
 head** (full 8x10 face plus its nose) enlarged 2x and centred.
@@ -23,10 +27,12 @@ alpha compositing and a transparent-border trim.
 | Foreground source | official Java 1.21.4 `assets/minecraft/textures/entity/villager/villager.png` (sha256 `dca7cc3e…`) |
 | Foreground geometry | the **full 8x10 villager face** UV `(8,8)-(16,18)` — all ten rows including the chin, not the 8x8 player crop — with the nose's front UV `(26,2)-(28,6)` overlaid at `(3,6)`; then doubled to 16x20 and centred at `(8,6)` on the 32x32 canvas |
 | Composition | 32x32 canvas, background at `(0,0)`, face on top at `(8,6)` |
+| Final size | the 32x32 composition enlarged 16x with NEAREST to 512x512 (`better-villager-trades-512.png`) |
 
 Everything is integer, deterministic and replayable. Verified while creating this provenance:
 `python3 render.py` in a clean directory holding the 17 shipped source textures reproduces
-`icon.png` byte for byte.
+the native 32x32 composition byte for byte; since 2026-10-02 the same run also writes the
+shipped 512x512 `icon.png` as `better-villager-trades-512.png`.
 
 ## Provenance files
 
@@ -52,7 +58,8 @@ PYTHONPATH=/nix/store/4v9j9wbzyhrlx9980ygbr812313mazy0-python3.13-pillow-12.3.0/
   python3 render.py
 ```
 
-This rewrites `better-villager-trades.png` (and the other pixel icons the script contains) and
+This rewrites `better-villager-trades.png` (native 32x32), `better-villager-trades-512.png` (the
+shipped `icon.png`), the other pixel icons the script contains, and
 `manifest.json`. It needs no network: every texture `render.py` reads is in `sources/`, and each
 one was verified against its pinned sha256 when this provenance was assembled. `render.py`
 itself never downloads anything; it only reads `sources/`.
@@ -71,7 +78,7 @@ itself never downloads anything; it only reads `sources/`.
   raises after writing 13 of its 17 files. `render.py` needs the file, so it is shipped here
   verified against the `item/potion.png` pin.
 * All colours and pixels come from those sources; nothing is interpolated, so the icon is crisp
-  at 32x32 and at integer multiples of it.
+  at 32x32 and at integer multiples of it such as the shipped 512x512.
 
 ## Working-tree note
 

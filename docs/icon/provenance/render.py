@@ -55,6 +55,8 @@ vface.alpha_composite(villager.crop((26, 2, 28, 6)), (3, 6))
 im = scale(luck)
 im.alpha_composite(scale(vface), (8, 6))
 save('BetterVillagerTrades', 'better-villager-trades', im, 'Luck 16x16 content doubled behind FULL 8x10 villager face plus nose, doubled and centered; final 32x32.')
+# Shipped icon (owner rule 2026-10-02: square, 512 or 1024 px): the 32x32 composition enlarged 16x with NEAREST.
+scale(im, 16).save(ROOT / 'better-villager-trades-512.png')
 
 # Faithful frame zero mapping from the historical procedural gear algorithm.
 gear, middle = load('gear'), load('gearmiddle')
@@ -70,6 +72,8 @@ skinface = face(load('supplied-skin'))
 im = scale(g)
 im.alpha_composite(scale(skinface), (8,8))
 save('BrainageServerUtils', 'brainage-server-utils', im, 'Historical vanilla gear frame 16x16 doubled behind supplied skin face 8x8 doubled; centered 32x32.', 'Mojang Alpha a1.0.4 jar retained misc/gear.png + misc/gearmiddle.png; supplied skin; provenance.json')
+# Shipped icon (owner rule 2026-10-02: square, 512 or 1024 px): the 32x32 composition enlarged 16x with NEAREST.
+scale(im, 16).save(ROOT / 'brainage-server-utils-512.png')
 
 info = canvas(16)
 d = ImageDraw.Draw(info)

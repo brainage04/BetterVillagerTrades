@@ -18,13 +18,13 @@ config="bettervillagertrades.mixins.json"
 [[dependencies.bettervillagertrades]]
 modId="neoforge"
 type="required"
-versionRange="[${neoforge_version},26.3)"
+versionRange="[${neoforge_version},)"
 ordering="NONE"
 side="BOTH"
 
 [[dependencies.bettervillagertrades]]
 modId="minecraft"
 type="required"
-versionRange="[${minecraft_version},26.3)"
+versionRange="${minecraft_version_range}"
 ordering="NONE"
 side="BOTH"
