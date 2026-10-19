@@ -1,6 +1,6 @@
 {
   "environment": "minecraft:default",
-  "structure": "fabricmoddingconventions:empty",
+  "structure": "minecraftmodconventions:empty",
   "max_ticks": 40,
   "type": "minecraft:function",
   "function": "bettervillagertrades:filters_match_both_enchantment_components"

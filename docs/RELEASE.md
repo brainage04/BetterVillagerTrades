@@ -16,4 +16,4 @@ The release workflow builds both loader JARs and attaches the Fabric and NeoForg
 If `MODRINTH_TOKEN` is configured, the same workflow creates or updates the Modrinth project and publishes both loader JARs. If both `CURSEFORGE_TOKEN` and `CURSEFORGE_PROJECT_ID` are configured, it publishes both loader JARs to CurseForge.
 All destinations use the same tag notes. Missing third-party credentials skip only that destination; the GitHub Release still proceeds.
 
-The build and release workflows use FabricModdingConventions 2.4.26, matching `gradle.properties`.
+The build and release workflows use MinecraftModConventions 3.0.1, matching `gradle.properties`.
