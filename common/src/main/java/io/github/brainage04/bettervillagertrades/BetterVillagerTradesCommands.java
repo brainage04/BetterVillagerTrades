@@ -75,13 +75,13 @@ public final class BetterVillagerTradesCommands {
 	) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
 		ServerPlayer player = source.getPlayerOrException();
 		if (!BuiltInRegistries.ITEM.containsKey(item)) {
-			source.sendFailure(Component.literal("Unknown item: " + item));
+			source.sendFailure(Component.translatableWithFallback("bettervillagertrades.filter.unknown_item", "Unknown item: %s", item.toString()));
 			return 0;
 		}
 		if (enchantment.isPresent()) {
 			ResourceKey<Enchantment> key = ResourceKey.create(Registries.ENCHANTMENT, enchantment.get());
 			if (source.registryAccess().lookupOrThrow(Registries.ENCHANTMENT).get(key).isEmpty()) {
-				source.sendFailure(Component.literal("Unknown enchantment: " + enchantment.get()));
+				source.sendFailure(Component.translatableWithFallback("bettervillagertrades.filter.unknown_enchantment", "Unknown enchantment: %s", enchantment.get().toString()));
 				return 0;
 			}
 		}
@@ -89,11 +89,13 @@ public final class BetterVillagerTradesCommands {
 		TradeFilter filter = new TradeFilter(item, enchantment);
 		PlayerTradeFilters filters = PlayerTradeFilters.get(source.getServer());
 		return switch (mutation) {
-			case ADD -> changed(source, filters.add(player, filter), "Protected ", "Already protected ", filter);
-			case REMOVE -> changed(source, filters.remove(player, filter), "Removed protection for ", "No protection existed for ", filter);
+			case ADD -> changed(source, filters.add(player, filter), "added", "already_added", "Protected %s.", "Already protected %s.", filter);
+			case REMOVE -> changed(source, filters.remove(player, filter), "removed", "not_found", "Removed protection for %s.", "No protection existed for %s.", filter);
 			case TOGGLE -> {
 				boolean added = filters.toggle(player, filter);
-				source.sendSuccess(() -> Component.literal((added ? "Protected " : "Removed protection for ") + filter.description() + "."), false);
+				source.sendSuccess(() -> Component.translatableWithFallback(
+						added ? "bettervillagertrades.filter.added" : "bettervillagertrades.filter.removed",
+						added ? "Protected %s." : "Removed protection for %s.", filter.description()), false);
 				yield 1;
 			}
 		};
@@ -102,31 +104,35 @@ public final class BetterVillagerTradesCommands {
 	private static int changed(
 			CommandSourceStack source,
 			boolean changed,
-			String changedPrefix,
-			String unchangedPrefix,
+			String changedKey,
+			String unchangedKey,
+			String changedFallback,
+			String unchangedFallback,
 			TradeFilter filter
 	) {
-		source.sendSuccess(() -> Component.literal((changed ? changedPrefix : unchangedPrefix) + filter.description() + "."), false);
+		source.sendSuccess(() -> Component.translatableWithFallback("bettervillagertrades.filter." + (changed ? changedKey : unchangedKey),
+				changed ? changedFallback : unchangedFallback, filter.description()), false);
 		return changed ? 1 : 0;
 	}
 
 	private static int list(CommandSourceStack source) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
 		List<TradeFilter> filters = PlayerTradeFilters.get(source.getServer()).get(source.getPlayerOrException());
 		if (filters.isEmpty()) {
-			source.sendSuccess(() -> Component.literal("You have no protected villager trades."), false);
+			source.sendSuccess(() -> Component.translatableWithFallback("bettervillagertrades.filter.empty", "You have no protected villager trades."), false);
 			return 0;
 		}
-		source.sendSuccess(() -> Component.literal("Protected villager trades (" + filters.size() + "):"), false);
-		filters.forEach(filter -> source.sendSuccess(() -> Component.literal("- " + filter.description()), false));
+		source.sendSuccess(() -> Component.translatableWithFallback("bettervillagertrades.filter.list", "Protected villager trades (%s):", filters.size()), false);
+		filters.forEach(filter -> source.sendSuccess(() -> Component.translatableWithFallback(
+				"bettervillagertrades.filter.entry", "- %s", filter.description()), false));
 		return filters.size();
 	}
 
 	private static int clear(CommandSourceStack source) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
 		ServerPlayer player = source.getPlayerOrException();
 		boolean changed = PlayerTradeFilters.get(source.getServer()).clear(player);
-		source.sendSuccess(() -> Component.literal(changed
-				? "Cleared all protected villager trades."
-				: "You had no protected villager trades."), false);
+		source.sendSuccess(() -> Component.translatableWithFallback(
+				changed ? "bettervillagertrades.filter.cleared" : "bettervillagertrades.filter.empty",
+				changed ? "Cleared all protected villager trades." : "You have no protected villager trades."), false);
 		return changed ? 1 : 0;
 	}
 

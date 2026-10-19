@@ -29,11 +29,11 @@ public abstract class MerchantScreenMixin extends AbstractContainerScreen<Mercha
 	private void betterVillagerTrades$addControls(CallbackInfo ci) {
 		int controlsY = topPos + imageHeight + 4;
 		addRenderableWidget(Button.builder(
-				Component.literal("Reroll trades"),
+				Component.translatable("bettervillagertrades.button.reroll"),
 				button -> betterVillagerTrades$sendCommand("bettervillagertrades reroll")
 		).bounds(leftPos + 5, controlsY, 96, 20).build());
 		addRenderableWidget(Button.builder(
-				Component.literal("Toggle filter"),
+				Component.translatable("bettervillagertrades.button.filter"),
 				button -> betterVillagerTrades$toggleSelectedFilter()
 		).bounds(leftPos + 105, controlsY, 96, 20).build());
 	}

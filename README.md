@@ -41,8 +41,8 @@ For example, `/bettervillagertrades filter add minecraft:enchanted_book minecraf
 
 Two boolean gamerules retain independent control of maximum-level outputs:
 
-- `max_enchanted_book_trades` controls stored enchantments on enchanted books.
-- `max_enchanted_item_trades` controls regular enchantments on enchanted items.
+- `bettervillagertrades:max_enchanted_book_trades` controls stored enchantments on enchanted books.
+- `bettervillagertrades:max_enchanted_item_trades` controls regular enchantments on enchanted items.
 
 Both default to `true`.
 

@@ -41,7 +41,7 @@ public final class TradeRerollService {
 				candidate -> candidate.getTradingPlayer() == player
 		).stream().findFirst();
 		if (villager.isEmpty()) {
-			player.sendSystemMessage(Component.literal("Open a villager trading screen before using this reroll command."));
+			player.sendSystemMessage(Component.translatableWithFallback("bettervillagertrades.reroll.open_screen", "Open a villager trading screen before using this reroll command."));
 			return 0;
 		}
 		return reroll(player, villager.get(), true) ? 1 : 0;
@@ -58,8 +58,9 @@ public final class TradeRerollService {
 		Optional<TradeFilter> protectedBy = PlayerTradeFilters.get(player.level().getServer()).protectedBy(player, offers);
 		if (protectedBy.isPresent()) {
 			if (sendFeedback) {
-				player.sendSystemMessage(Component.literal(
-						"Reroll blocked: this villager offers your protected trade " + protectedBy.get().description() + "."
+				player.sendSystemMessage(Component.translatableWithFallback(
+						"bettervillagertrades.reroll.protected", "Reroll blocked: this villager offers your protected trade %s.",
+						protectedBy.get().description()
 				));
 			}
 			return false;
@@ -67,7 +68,7 @@ public final class TradeRerollService {
 
 		if (!(villager instanceof VillagerTradeReroller reroller)) {
 			BetterVillagerTrades.LOGGER.error("Villager reroll mixin was not applied.");
-			if (sendFeedback) player.sendSystemMessage(Component.literal("Trade rerolling is unavailable because the server mixin did not load."));
+			if (sendFeedback) player.sendSystemMessage(Component.translatableWithFallback("bettervillagertrades.reroll.unavailable", "Trade rerolling is unavailable because the server mixin did not load."));
 			return false;
 		}
 
@@ -83,25 +84,26 @@ public final class TradeRerollService {
 					villager.canRestock()
 			);
 		}
-		if (sendFeedback) player.sendSystemMessage(Component.literal("Villager trades rerolled."));
+		if (sendFeedback) player.sendSystemMessage(Component.translatableWithFallback("bettervillagertrades.reroll.success", "Villager trades rerolled."));
 		return true;
 	}
 
 	private static Component eligibilityFailure(ServerPlayer player, Villager villager) {
 		if (villager.getTradingPlayer() != null && villager.getTradingPlayer() != player) {
-			return Component.literal("This villager is currently trading with another player.");
+			return Component.translatableWithFallback("bettervillagertrades.reroll.busy", "This villager is currently trading with another player.");
 		}
 		if (villager.isBaby()) {
-			return Component.literal("Baby villagers do not have trades to reroll.");
+			return Component.translatableWithFallback("bettervillagertrades.reroll.baby", "Baby villagers do not have trades to reroll.");
 		}
-		if (villager.getVillagerData().profession().unwrapKey().orElse(VillagerProfession.NONE) == VillagerProfession.NONE) {
-			return Component.literal("This villager needs a profession before its trades can be rerolled.");
+		var profession = villager.getVillagerData().profession().unwrapKey().orElse(VillagerProfession.NONE);
+		if (profession.equals(VillagerProfession.NONE) || profession.equals(VillagerProfession.NITWIT)) {
+			return Component.translatableWithFallback("bettervillagertrades.reroll.no_profession", "This villager needs a trading profession before its trades can be rerolled.");
 		}
 		if (villager.getVillagerData().level() != 1 || villager.getVillagerXp() != 0) {
-			return Component.literal("Only novice villagers with no trade experience can be rerolled.");
+			return Component.translatableWithFallback("bettervillagertrades.reroll.experienced", "Only novice villagers with no trade experience can be rerolled.");
 		}
 		if (villager.getOffers().stream().anyMatch(offer -> offer.getUses() > 0)) {
-			return Component.literal("This villager is locked because one of its trades has already been used.");
+			return Component.translatableWithFallback("bettervillagertrades.reroll.used", "This villager is locked because one of its trades has already been used.");
 		}
 		return null;
 	}

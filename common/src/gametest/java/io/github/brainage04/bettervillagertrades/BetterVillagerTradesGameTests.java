@@ -126,6 +126,10 @@ public final class BetterVillagerTradesGameTests {
 		villager.setOffers(originalOffers);
 		helper.assertTrue(!TradeRerollService.reroll(player, villager, false),
 				"A villager with a used trade must be locked against rerolls");
+		Villager nitwit = createVillager(helper, level, VillagerProfession.NITWIT, 1, 3, 2, 2);
+		helper.assertTrue(!TradeRerollService.reroll(player, nitwit, false),
+				"Nitwits cannot acquire a profession and must not report a successful reroll");
+		helper.assertTrue(nitwit.getOffers().isEmpty(), "Rejected nitwits must keep their empty offers");
 		helper.succeed();
 	}
 

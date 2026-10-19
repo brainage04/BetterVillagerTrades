@@ -5,6 +5,7 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantment;
@@ -40,8 +41,10 @@ public record TradeFilter(Identifier item, Optional<Identifier> enchantment) {
 		return item + enchantment.map(id -> " " + id).orElse("");
 	}
 
-	public String description() {
-		return enchantment.map(id -> item + " with " + id).orElse(item.toString());
+	public Component description() {
+		return enchantment.<Component>map(id -> Component.translatableWithFallback(
+				"bettervillagertrades.filter.enchanted", "%s with %s", item.toString(), id.toString()
+		)).orElseGet(() -> Component.literal(item.toString()));
 	}
 
 	private static Optional<Identifier> firstEnchantment(ItemEnchantments enchantments) {
