@@ -65,7 +65,7 @@ public final class BetterVillagerTradesClientGameTest implements FabricClientGam
 				assertMerchantControls(context);
 				java.util.concurrent.atomic.AtomicBoolean serverState = new java.util.concurrent.atomic.AtomicBoolean();
 				context.clickScreenButton("Toggle filter");
-				context.waitFor(client -> {
+				waitForServerCondition(context, "Filter button must add protection", () -> {
 					server.runOnServer(s -> {
 						ServerPlayer player = s.getPlayerList().getPlayers().getFirst();
 						serverState.set(!PlayerTradeFilters.get(s).get(player).isEmpty());
@@ -74,7 +74,7 @@ public final class BetterVillagerTradesClientGameTest implements FabricClientGam
 				});
 				context.clickScreenButton("Reroll trades");
 				context.clickScreenButton("Toggle filter");
-				context.waitFor(client -> {
+				waitForServerCondition(context, "Filter button must remove protection", () -> {
 					server.runOnServer(s -> serverState.set(PlayerTradeFilters.get(s).get(s.getPlayerList().getPlayers().getFirst()).isEmpty()));
 					return serverState.get();
 				});
@@ -100,6 +100,16 @@ public final class BetterVillagerTradesClientGameTest implements FabricClientGam
 				openInventoryScreen(context);
 				assertClientInventoryTrade(context, 1, DataComponents.ENCHANTMENTS);
 				context.waitTicks(60); } finally { server.runOnServer(BetterVillagerTradesClientGameTest::cleanupTrades); } });
+	}
+
+	private static void waitForServerCondition(
+			ClientGameTestContext context, String message, java.util.function.BooleanSupplier condition
+	) {
+		for (int tick = 0; tick < 100; tick++) {
+			if (condition.getAsBoolean()) return;
+			context.waitTick();
+		}
+		throw new AssertionError(message);
 	}
 
 	private static void prepareTrades(MinecraftServer server) {
