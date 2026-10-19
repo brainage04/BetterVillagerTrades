@@ -135,6 +135,32 @@ public final class BetterVillagerTradesGameTests {
 	}
 
 	@SuppressWarnings("removal")
+	public static void rerollRecalculatesOpenMerchantResult(GameTestHelper helper) {
+		ServerPlayer player = helper.makeMockServerPlayerInLevel();
+		Villager villager = createVillager(helper, helper.getLevel(), VillagerProfession.LIBRARIAN, 1, 2, 2, 2);
+		MerchantOffers offers = new MerchantOffers();
+		offers.add(new MerchantOffer(new ItemCost(Items.EMERALD), new ItemStack(Items.NETHER_STAR), 1, 1, 0));
+		villager.setOffers(offers);
+		villager.setTradingPlayer(player);
+		var previousMenu = player.containerMenu;
+		var menu = new net.minecraft.world.inventory.MerchantMenu(1, player.getInventory(), villager);
+		player.containerMenu = menu;
+		try {
+			menu.getSlot(0).set(new ItemStack(Items.EMERALD, 64));
+			menu.setSelectionHint(0);
+			helper.assertTrue(menu.getSlot(2).getItem().is(Items.NETHER_STAR), "Old offer must initially have a result");
+			helper.assertTrue(TradeRerollService.reroll(player, villager, false), "An open eligible merchant must reroll");
+			helper.assertTrue(!menu.getSlot(2).getItem().is(Items.NETHER_STAR), "Old output must not remain collectible after reroll");
+			helper.assertTrue(menu.getSlot(0).getItem().getCount() == 64, "Recalculation must preserve payment items");
+			helper.assertTrue(menu.getOffers() == villager.getOffers(), "Menu must expose the new merchant offers");
+		} finally {
+			player.containerMenu = previousMenu;
+			villager.setTradingPlayer(null);
+		}
+		helper.succeed();
+	}
+
+	@SuppressWarnings("removal")
 	public static void filterCommandsValidateAndIsolatePlayers(GameTestHelper helper) {
 		ServerPlayer player = helper.makeMockServerPlayerInLevel();
 		ServerPlayer other = helper.makeMockServerPlayerInLevel();

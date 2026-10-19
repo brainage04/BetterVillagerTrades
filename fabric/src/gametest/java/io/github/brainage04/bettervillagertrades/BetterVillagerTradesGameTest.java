@@ -38,4 +38,9 @@ public final class BetterVillagerTradesGameTest {
 	public void registeredGamerulesControlOnlyNewOffers(GameTestHelper helper) {
 		BetterVillagerTradesGameTests.registeredGamerulesControlOnlyNewOffers(helper);
 	}
+
+	@GameTest
+	public void rerollRecalculatesOpenMerchantResult(GameTestHelper helper) {
+		BetterVillagerTradesGameTests.rerollRecalculatesOpenMerchantResult(helper);
+	}
 }

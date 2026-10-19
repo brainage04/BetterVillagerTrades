@@ -26,5 +26,6 @@ public final class BetterVillagerTradesNeoForgeGameTestRegistration {
 		event.register(BuiltInRegistries.TEST_FUNCTION.key(), BetterVillagerTrades.of("rejects_ineligible_villagers_and_preserves_emeralds"), () -> BetterVillagerTradesGameTests::rejectsIneligibleVillagersAndPreservesEmeralds);
 		event.register(BuiltInRegistries.TEST_FUNCTION.key(), BetterVillagerTrades.of("filters_match_both_enchantment_components"), () -> BetterVillagerTradesGameTests::filtersMatchBothEnchantmentComponents);
 		event.register(BuiltInRegistries.TEST_FUNCTION.key(), BetterVillagerTrades.of("registered_gamerules_control_only_new_offers"), () -> BetterVillagerTradesGameTests::registeredGamerulesControlOnlyNewOffers);
+		event.register(BuiltInRegistries.TEST_FUNCTION.key(), BetterVillagerTrades.of("reroll_recalculates_open_merchant_result"), () -> BetterVillagerTradesGameTests::rerollRecalculatesOpenMerchantResult);
 	}
 }

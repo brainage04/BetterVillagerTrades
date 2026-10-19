@@ -75,6 +75,7 @@ public final class TradeRerollService {
 		reroller.betterVillagerTrades$rerollTrades(player.level());
 		if (player.containerMenu instanceof MerchantMenu menu && villager.getTradingPlayer() == player) {
 			menu.setOffers(villager.getOffers());
+			menu.setSelectionHint(0);
 			player.sendMerchantOffers(
 					menu.containerId,
 					villager.getOffers(),
@@ -83,6 +84,7 @@ public final class TradeRerollService {
 					villager.showProgressBar(),
 					villager.canRestock()
 			);
+			menu.broadcastChanges();
 		}
 		if (sendFeedback) player.sendSystemMessage(Component.translatableWithFallback("bettervillagertrades.reroll.success", "Villager trades rerolled."));
 		return true;
