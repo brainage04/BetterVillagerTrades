@@ -1,5 +1,6 @@
 package io.github.brainage04.bettervillagertrades;
 
+import com.mojang.serialization.JsonOps;
 import io.github.brainage04.bettervillagertrades.fabric.BetterVillagerTradesFabric;
 
 import net.minecraft.SharedConstants;
@@ -62,5 +63,25 @@ class BetterVillagerTradesTest {
 		assertTrue(filters.get(secondPlayer).isEmpty());
 		assertTrue(filters.remove(firstPlayer, mendingBook));
 		assertTrue(filters.get(firstPlayer).isEmpty());
+	}
+
+	@Test
+	void savedFiltersRoundTripWithoutSharingPlayerLists() {
+		PlayerTradeFilters filters = new PlayerTradeFilters();
+		UUID firstPlayer = new UUID(0, 1);
+		UUID secondPlayer = new UUID(0, 2);
+		TradeFilter books = new TradeFilter(BuiltInRegistries.ITEM.getKey(Items.ENCHANTED_BOOK), Optional.empty());
+		TradeFilter swords = new TradeFilter(BuiltInRegistries.ITEM.getKey(Items.DIAMOND_SWORD), Optional.empty());
+		filters.add(firstPlayer, books);
+		filters.add(secondPlayer, swords);
+
+		var encoded = PlayerTradeFilters.TYPE.codec().encodeStart(JsonOps.INSTANCE, filters).getOrThrow();
+		PlayerTradeFilters restored = PlayerTradeFilters.TYPE.codec().parse(JsonOps.INSTANCE, encoded).getOrThrow();
+		assertEquals(List.of(books), restored.get(firstPlayer));
+		assertEquals(List.of(swords), restored.get(secondPlayer));
+		assertTrue(restored.clear(firstPlayer));
+		assertFalse(restored.clear(firstPlayer));
+		assertEquals(List.of(swords), restored.get(secondPlayer));
+		assertEquals(List.of(books), filters.get(firstPlayer));
 	}
 }

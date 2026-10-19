@@ -22,5 +22,9 @@ public final class BetterVillagerTradesNeoForgeGameTestRegistration {
 		event.register(BuiltInRegistries.TEST_FUNCTION.key(), Identifier.fromNamespaceAndPath(BetterVillagerTrades.MOD_ID, "generated_villager_trades_are_maxed"), () -> BetterVillagerTradesGameTests::generatedVillagerTradesAreMaxed);
 		event.register(BuiltInRegistries.TEST_FUNCTION.key(), Identifier.fromNamespaceAndPath(BetterVillagerTrades.MOD_ID, "gamerules_independently_control_trade_outputs"), () -> BetterVillagerTradesGameTests::gamerulesIndependentlyControlBookAndItemTradeOutputs);
 		event.register(BuiltInRegistries.TEST_FUNCTION.key(), Identifier.fromNamespaceAndPath(BetterVillagerTrades.MOD_ID, "rerolls_untraded_villagers_without_protected_offers"), () -> BetterVillagerTradesGameTests::rerollsUntradedVillagersWithoutProtectedOffers);
+		event.register(BuiltInRegistries.TEST_FUNCTION.key(), BetterVillagerTrades.of("filter_commands_validate_and_isolate_players"), () -> BetterVillagerTradesGameTests::filterCommandsValidateAndIsolatePlayers);
+		event.register(BuiltInRegistries.TEST_FUNCTION.key(), BetterVillagerTrades.of("rejects_ineligible_villagers_and_preserves_emeralds"), () -> BetterVillagerTradesGameTests::rejectsIneligibleVillagersAndPreservesEmeralds);
+		event.register(BuiltInRegistries.TEST_FUNCTION.key(), BetterVillagerTrades.of("filters_match_both_enchantment_components"), () -> BetterVillagerTradesGameTests::filtersMatchBothEnchantmentComponents);
+		event.register(BuiltInRegistries.TEST_FUNCTION.key(), BetterVillagerTrades.of("registered_gamerules_control_only_new_offers"), () -> BetterVillagerTradesGameTests::registeredGamerulesControlOnlyNewOffers);
 	}
 }

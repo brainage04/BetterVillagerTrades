@@ -18,4 +18,24 @@ public final class BetterVillagerTradesGameTest {
 	public void rerollsUntradedVillagersWithoutProtectedOffers(GameTestHelper helper) {
 		BetterVillagerTradesGameTests.rerollsUntradedVillagersWithoutProtectedOffers(helper);
 	}
+
+	@GameTest
+	public void filterCommandsValidateAndIsolatePlayers(GameTestHelper helper) {
+		BetterVillagerTradesGameTests.filterCommandsValidateAndIsolatePlayers(helper);
+	}
+
+	@GameTest
+	public void rejectsIneligibleVillagersAndPreservesEmeralds(GameTestHelper helper) {
+		BetterVillagerTradesGameTests.rejectsIneligibleVillagersAndPreservesEmeralds(helper);
+	}
+
+	@GameTest
+	public void filtersMatchBothEnchantmentComponents(GameTestHelper helper) {
+		BetterVillagerTradesGameTests.filtersMatchBothEnchantmentComponents(helper);
+	}
+
+	@GameTest
+	public void registeredGamerulesControlOnlyNewOffers(GameTestHelper helper) {
+		BetterVillagerTradesGameTests.registeredGamerulesControlOnlyNewOffers(helper);
+	}
 }

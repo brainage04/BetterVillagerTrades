@@ -8,7 +8,6 @@ import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.inventory.MerchantScreen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
-import net.minecraft.network.chat.Component;
 import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.server.MinecraftServer;
@@ -54,7 +53,9 @@ public final class BetterVillagerTradesClientGameTest implements FabricClientGam
 				assertClientInventoryTrade(context, 0, DataComponents.STORED_ENCHANTMENTS);
 				context.waitTicks(60);
 
-				openMerchantScreen(context);
+				server.runOnServer(BetterVillagerTradesClientGameTest::openMerchantScreen);
+				context.waitForScreen(MerchantScreen.class);
+				context.waitFor(client -> client.player.containerMenu instanceof MerchantMenu menu && !menu.getOffers().isEmpty());
 				ClientGameTestRecorder.showStep(
 						context,
 						"trade-reroll-controls",
@@ -62,6 +63,31 @@ public final class BetterVillagerTradesClientGameTest implements FabricClientGam
 						"The optional client adds Reroll trades and Toggle filter controls beneath the standard villager trading screen"
 				);
 				assertMerchantControls(context);
+				java.util.concurrent.atomic.AtomicBoolean serverState = new java.util.concurrent.atomic.AtomicBoolean();
+				context.clickScreenButton("Toggle filter");
+				context.waitFor(client -> {
+					server.runOnServer(s -> {
+						ServerPlayer player = s.getPlayerList().getPlayers().getFirst();
+						serverState.set(!PlayerTradeFilters.get(s).get(player).isEmpty());
+					});
+					return serverState.get();
+				});
+				context.clickScreenButton("Reroll trades");
+				context.clickScreenButton("Toggle filter");
+				context.waitFor(client -> {
+					server.runOnServer(s -> serverState.set(PlayerTradeFilters.get(s).get(s.getPlayerList().getPlayers().getFirst()).isEmpty()));
+					return serverState.get();
+				});
+				server.runOnServer(s -> {
+					Villager librarian = (Villager) s.overworld().getEntity(librarianId);
+					if (librarian.getOffers().size() != 1) throw new AssertionError("Protected button reroll must preserve offers.");
+				});
+				context.clickScreenButton("Reroll trades");
+				context.waitFor(client -> client.player.containerMenu instanceof MerchantMenu menu && menu.getOffers().size() > 1);
+				server.runOnServer(s -> {
+					Villager librarian = (Villager) s.overworld().getEntity(librarianId);
+					if (librarian.getOffers().size() <= 1) throw new AssertionError("Reroll button must replace server offers.");
+				});
 				context.waitTicks(60);
 
 				assertClientVillagerStaged(context, equipmentSmithId);
@@ -99,6 +125,8 @@ public final class BetterVillagerTradesClientGameTest implements FabricClientGam
 			Villager villager = EntityTypes.VILLAGER.create(level, EntitySpawnReason.COMMAND);
 			if (villager == null) throw new AssertionError("Expected villager creation to succeed.");
 			villager.setPos(x, y, z);
+			villager.setNoAi(true);
+			villager.getRandom().setSeed(100L + attempt);
 			villager.setVillagerData(villager.getVillagerData().withProfession(level.registryAccess(), profession).withLevel(professionLevel));
 			level.addFreshEntity(villager);
 			if (hasMaxedGeneratedTrade(villager, bookTrade)) return villager;
@@ -131,20 +159,15 @@ public final class BetterVillagerTradesClientGameTest implements FabricClientGam
 		throw new AssertionError("Expected a generated enchanted trade result.");
 	}
 
-	private static void openMerchantScreen(ClientGameTestContext context) {
-		context.runOnClient(client -> {
-			MerchantMenu menu = new MerchantMenu(0, client.player.getInventory());
-			MerchantOffers offers = new MerchantOffers();
-			offers.add(new MerchantOffer(
-					new ItemCost(Items.EMERALD),
-					client.player.getInventory().getItem(0).copy(),
-					1,
-					1,
-					0.0F
-			));
-			menu.setOffers(offers);
-			client.gui.setScreen(new MerchantScreen(menu, client.player.getInventory(), Component.literal("Librarian")));
-		});
+	private static void openMerchantScreen(MinecraftServer server) {
+		ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+		player.closeContainer();
+		Villager librarian = (Villager) server.overworld().getEntity(librarianId);
+		MerchantOffers offers = new MerchantOffers();
+		offers.add(new MerchantOffer(new ItemCost(Items.EMERALD), player.getInventory().getItem(0).copy(), 1, 1, 0.0F));
+		librarian.setOffers(offers);
+		librarian.setTradingPlayer(player);
+		librarian.openTradingScreen(player, librarian.getDisplayName(), 1);
 	}
 
 	private static void assertMerchantControls(ClientGameTestContext context) {
@@ -196,6 +219,10 @@ public final class BetterVillagerTradesClientGameTest implements FabricClientGam
 
 	private static void cleanupTrades(MinecraftServer server) {
 		ServerLevel level = server.overworld();
+		for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+			player.closeContainer();
+			PlayerTradeFilters.get(server).clear(player);
+		}
 		if (librarianId != null) {
 			Entity librarian = level.getEntity(librarianId);
 			if (librarian != null) librarian.discard();

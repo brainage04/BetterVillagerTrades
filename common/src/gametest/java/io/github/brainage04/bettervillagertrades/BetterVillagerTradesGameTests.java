@@ -1,5 +1,6 @@
 package io.github.brainage04.bettervillagertrades;
 
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.component.DataComponents;
@@ -133,6 +134,133 @@ public final class BetterVillagerTradesGameTests {
 		helper.succeed();
 	}
 
+	@SuppressWarnings("removal")
+	public static void filterCommandsValidateAndIsolatePlayers(GameTestHelper helper) {
+		ServerPlayer player = helper.makeMockServerPlayerInLevel();
+		ServerPlayer other = helper.makeMockServerPlayerInLevel();
+		PlayerTradeFilters filters = PlayerTradeFilters.get(helper.getLevel().getServer());
+		try {
+			helper.assertTrue(command(player, "filter list") == 0, "New players have no filters");
+			helper.assertTrue(command(player, "filter add minecraft:enchanted_book minecraft:mending") == 1, "Add must succeed");
+			helper.assertTrue(command(player, "filter add minecraft:enchanted_book minecraft:mending") == 0, "Duplicates must not be added");
+			helper.assertTrue(command(player, "filter list") == 1, "List must report the stored filter count");
+			helper.assertTrue(filters.get(other).isEmpty(), "Commands must not change another player's filters");
+			helper.assertTrue(command(player, "filter add bettervillagertrades:missing") == 0, "Unknown items must be rejected");
+			helper.assertTrue(command(player, "filter add minecraft:book bettervillagertrades:missing") == 0, "Unknown enchantments must be rejected");
+			helper.assertTrue(filters.get(player).size() == 1, "Invalid arguments must not add filters");
+			helper.assertTrue(command(player, "filter remove minecraft:book") == 0, "Removing a missing filter must report no change");
+			helper.assertTrue(command(player, "filter toggle minecraft:book") == 1, "Toggle must add");
+			helper.assertTrue(filters.get(player).size() == 2, "Toggled filter must be stored");
+			helper.assertTrue(command(player, "filter toggle minecraft:book") == 1, "Toggle must remove");
+			helper.assertTrue(command(player, "filter remove minecraft:enchanted_book minecraft:mending") == 1, "Remove must succeed");
+			helper.assertTrue(command(player, "filter clear") == 0, "Clearing empty filters must report no change");
+			command(player, "filter add minecraft:book");
+			helper.assertTrue(command(player, "filter clear") == 1, "Clear must remove stored filters");
+			helper.assertTrue(command(player, "reroll") == 0, "Reroll requires an open trading session");
+		} finally {
+			filters.clear(player);
+			filters.clear(other);
+		}
+		helper.succeed();
+	}
+
+	@SuppressWarnings("removal")
+	public static void rejectsIneligibleVillagersAndPreservesEmeralds(GameTestHelper helper) {
+		ServerLevel level = helper.getLevel();
+		ServerPlayer player = helper.makeMockServerPlayerInLevel();
+		ServerPlayer other = helper.makeMockServerPlayerInLevel();
+		Villager villager = createVillager(helper, level, VillagerProfession.LIBRARIAN, 1, 2, 2, 2);
+		MerchantOffers offers = new MerchantOffers();
+		offers.add(new MerchantOffer(new ItemCost(Items.EMERALD), new ItemStack(Items.PAPER), 1, 1, 0));
+		villager.setOffers(offers);
+		villager.setBaby(true);
+		helper.assertTrue(!TradeRerollService.reroll(player, villager, false), "Babies must be rejected");
+		villager.setBaby(false);
+		villager.setVillagerData(villager.getVillagerData().withProfession(level.registryAccess(), VillagerProfession.NONE));
+		helper.assertTrue(!TradeRerollService.reroll(player, villager, false), "Unemployed villagers must be rejected");
+		villager.setVillagerData(villager.getVillagerData().withProfession(level.registryAccess(), VillagerProfession.LIBRARIAN).withLevel(2));
+		helper.assertTrue(!TradeRerollService.reroll(player, villager, false), "Non-novices must be rejected");
+		villager.setVillagerData(villager.getVillagerData().withLevel(1));
+		villager.setOffers(offers);
+		villager.setVillagerXp(1);
+		helper.assertTrue(!TradeRerollService.reroll(player, villager, false), "Experienced novices must be rejected");
+		villager.setVillagerXp(0);
+		villager.setTradingPlayer(other);
+		helper.assertTrue(!TradeRerollService.reroll(player, villager, false), "Another player's merchant must be protected");
+		villager.setTradingPlayer(null);
+		helper.assertTrue(villager.getOffers() == offers, "Rejected rerolls must preserve offers");
+		player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.EMERALD, 3));
+		helper.assertTrue(!TradeRerollService.interact(player, villager, InteractionHand.MAIN_HAND).consumesAction(), "Standing interactions must pass through");
+		player.setShiftKeyDown(true);
+		player.setItemInHand(InteractionHand.OFF_HAND, new ItemStack(Items.BOOK));
+		helper.assertTrue(!TradeRerollService.interact(player, villager, InteractionHand.OFF_HAND).consumesAction(), "Non-emerald interactions must pass through");
+		helper.assertTrue(TradeRerollService.interact(player, villager, InteractionHand.MAIN_HAND).consumesAction(), "Emerald reroll must be handled");
+		helper.assertTrue(player.getMainHandItem().getCount() == 3, "Reroll must not consume emeralds");
+		helper.assertTrue(villager.getOffers() != offers || !offers.getFirst().getResult().is(Items.PAPER), "Eligible interaction must replace offers");
+		player.setShiftKeyDown(false);
+		helper.succeed();
+	}
+
+	public static void filtersMatchBothEnchantmentComponents(GameTestHelper helper) {
+		var registry = helper.getLevel().registryAccess().lookupOrThrow(Registries.ENCHANTMENT);
+		Holder<Enchantment> mending = registry.getOrThrow(Enchantments.MENDING);
+		Holder<Enchantment> sharpness = registry.getOrThrow(Enchantments.SHARPNESS);
+		ItemStack book = enchantedStack(new ItemStack(Items.ENCHANTED_BOOK), DataComponents.STORED_ENCHANTMENTS, mending);
+		ItemStack sword = enchantedStack(new ItemStack(Items.DIAMOND_SWORD), DataComponents.ENCHANTMENTS, mending);
+		TradeFilter bookFilter = TradeFilter.fromStack(book);
+		TradeFilter swordFilter = TradeFilter.fromStack(sword);
+		helper.assertTrue(bookFilter.matches(book), "Stored enchantments must match");
+		helper.assertTrue(swordFilter.matches(sword), "Regular enchantments must match");
+		helper.assertTrue(!bookFilter.matches(sword), "An enchantment filter must also match the item");
+		helper.assertTrue(!swordFilter.matches(enchantedStack(new ItemStack(Items.DIAMOND_SWORD), DataComponents.ENCHANTMENTS, sharpness)), "Different enchantments must not match");
+		helper.assertTrue(!swordFilter.matches(new ItemStack(Items.DIAMOND_SWORD)), "Missing enchantments must not match");
+		TradeFilter allSwords = new TradeFilter(swordFilter.item(), java.util.Optional.empty());
+		helper.assertTrue(allSwords.matches(new ItemStack(Items.DIAMOND_SWORD)), "Item-only filters must match unenchanted outputs");
+		helper.assertTrue(allSwords.matches(sword), "Item-only filters must also match enchanted outputs");
+		helper.assertTrue(swordFilter.description().getString().equals("minecraft:diamond_sword with minecraft:mending"), "Vanilla clients must receive readable fallback text");
+		helper.succeed();
+	}
+
+	public static void registeredGamerulesControlOnlyNewOffers(GameTestHelper helper) {
+		ServerLevel level = helper.getLevel();
+		var rules = level.getGameRules();
+		boolean oldBooks = rules.get(BetterVillagerTrades.MAX_ENCHANTED_BOOK_TRADES);
+		boolean oldItems = rules.get(BetterVillagerTrades.MAX_ENCHANTED_ITEM_TRADES);
+		Holder<Enchantment> sharpness = level.registryAccess().lookupOrThrow(Registries.ENCHANTMENT).getOrThrow(Enchantments.SHARPNESS);
+		Villager villager = createVillager(helper, level, VillagerProfession.LIBRARIAN, 1, 2, 2, 2);
+		try {
+			for (boolean books : new boolean[]{false, true}) {
+				for (boolean items : new boolean[]{false, true}) {
+					rules.set(BetterVillagerTrades.MAX_ENCHANTED_BOOK_TRADES, books, level.getServer());
+					rules.set(BetterVillagerTrades.MAX_ENCHANTED_ITEM_TRADES, items, level.getServer());
+					MerchantOffers offers = new MerchantOffers();
+					offers.add(new MerchantOffer(new ItemCost(Items.EMERALD), enchantedStack(new ItemStack(Items.ENCHANTED_BOOK), DataComponents.STORED_ENCHANTMENTS, sharpness), 1, 1, 0));
+					offers.add(new MerchantOffer(new ItemCost(Items.EMERALD), enchantedStack(new ItemStack(Items.ENCHANTED_BOOK), DataComponents.STORED_ENCHANTMENTS, sharpness), 1, 1, 0));
+					offers.add(new MerchantOffer(new ItemCost(Items.EMERALD), enchantedStack(new ItemStack(Items.DIAMOND_SWORD), DataComponents.ENCHANTMENTS, sharpness), 1, 1, 0));
+					villager.setOffers(offers);
+					BetterVillagerTrades.maximizeNewVillagerOffers(villager, level, 1);
+					helper.assertTrue(enchantmentLevel(offers.get(0), DataComponents.STORED_ENCHANTMENTS, sharpness) == 1, "Previously generated offers must be untouched");
+					helper.assertTrue(enchantmentLevel(offers.get(1), DataComponents.STORED_ENCHANTMENTS, sharpness) == (books ? 5 : 1), "Registered book rule must control new outputs");
+					helper.assertTrue(enchantmentLevel(offers.get(2), DataComponents.ENCHANTMENTS, sharpness) == (items ? 5 : 1), "Registered item rule must control new outputs");
+				}
+			}
+		} finally {
+			rules.set(BetterVillagerTrades.MAX_ENCHANTED_BOOK_TRADES, oldBooks, level.getServer());
+			rules.set(BetterVillagerTrades.MAX_ENCHANTED_ITEM_TRADES, oldItems, level.getServer());
+		}
+		helper.succeed();
+	}
+
+	private static int command(ServerPlayer player, String command) {
+		try {
+			return player.level().getServer().getCommands().getDispatcher().execute(
+					"bettervillagertrades " + command, player.createCommandSourceStack().withSuppressedOutput()
+			);
+		} catch (CommandSyntaxException exception) {
+			throw new AssertionError("Player command must be registered and executable: " + command, exception);
+		}
+	}
+
 	private static ItemStack enchantedStack(
 			ItemStack stack, DataComponentType<ItemEnchantments> componentType, Holder<Enchantment> enchantment
 	) {
@@ -173,6 +301,8 @@ public final class BetterVillagerTradesGameTests {
 			int levelNumber, int x, int y, int z
 	) {
 		Villager villager = helper.spawn(EntityTypes.VILLAGER, x, y, z);
+		villager.setNoAi(true);
+		villager.getRandom().setSeed(31L * x + 17L * y + z);
 		VillagerData villagerData = villager.getVillagerData().withProfession(level.registryAccess(), profession).withLevel(levelNumber);
 		villager.setVillagerData(villagerData);
 		return villager;
