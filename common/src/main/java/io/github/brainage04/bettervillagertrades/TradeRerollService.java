@@ -75,7 +75,7 @@ public final class TradeRerollService {
 		reroller.betterVillagerTrades$rerollTrades(player.level());
 		if (player.containerMenu instanceof MerchantMenu menu && villager.getTradingPlayer() == player) {
 			menu.setOffers(villager.getOffers());
-			menu.setSelectionHint(0);
+			menu.getSlot(0).setChanged();
 			player.sendMerchantOffers(
 					menu.containerId,
 					villager.getOffers(),

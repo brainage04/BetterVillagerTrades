@@ -139,7 +139,10 @@ public final class BetterVillagerTradesGameTests {
 		ServerPlayer player = helper.makeMockServerPlayerInLevel();
 		Villager villager = createVillager(helper, helper.getLevel(), VillagerProfession.LIBRARIAN, 1, 2, 2, 2);
 		MerchantOffers offers = new MerchantOffers();
-		offers.add(new MerchantOffer(new ItemCost(Items.EMERALD), new ItemStack(Items.NETHER_STAR), 1, 1, 0));
+		offers.add(new MerchantOffer(new ItemCost(Items.EMERALD), java.util.Optional.of(new ItemCost(Items.BOOK)),
+				new ItemStack(Items.DIAMOND), 1, 1, 0));
+		offers.add(new MerchantOffer(new ItemCost(Items.EMERALD), java.util.Optional.of(new ItemCost(Items.BOOK)),
+				new ItemStack(Items.NETHER_STAR), 1, 1, 0));
 		villager.setOffers(offers);
 		villager.setTradingPlayer(player);
 		var previousMenu = player.containerMenu;
@@ -147,12 +150,25 @@ public final class BetterVillagerTradesGameTests {
 		player.containerMenu = menu;
 		try {
 			menu.getSlot(0).set(new ItemStack(Items.EMERALD, 64));
-			menu.setSelectionHint(0);
+			menu.getSlot(1).set(new ItemStack(Items.BOOK, 3));
+			menu.setSelectionHint(1);
 			helper.assertTrue(menu.getSlot(2).getItem().is(Items.NETHER_STAR), "Old offer must initially have a result");
 			helper.assertTrue(TradeRerollService.reroll(player, villager, false), "An open eligible merchant must reroll");
 			helper.assertTrue(!menu.getSlot(2).getItem().is(Items.NETHER_STAR), "Old output must not remain collectible after reroll");
-			helper.assertTrue(menu.getSlot(0).getItem().getCount() == 64, "Recalculation must preserve payment items");
+			helper.assertTrue(menu.getSlot(0).getItem().getCount() == 64, "Recalculation must preserve the first payment");
+			helper.assertTrue(menu.getSlot(1).getItem().is(Items.BOOK) && menu.getSlot(1).getItem().getCount() == 3,
+					"Recalculation must preserve the second payment");
 			helper.assertTrue(menu.getOffers() == villager.getOffers(), "Menu must expose the new merchant offers");
+			// Equal-cost offers expose the retained selection without depending on randomized reroll outputs.
+			MerchantOffers selectionProbe = new MerchantOffers();
+			selectionProbe.add(new MerchantOffer(new ItemCost(Items.EMERALD), java.util.Optional.of(new ItemCost(Items.BOOK)),
+					new ItemStack(Items.DIAMOND), 1, 1, 0));
+			selectionProbe.add(new MerchantOffer(new ItemCost(Items.EMERALD), java.util.Optional.of(new ItemCost(Items.BOOK)),
+					new ItemStack(Items.GOLD_INGOT), 1, 1, 0));
+			villager.setOffers(selectionProbe);
+			menu.getSlot(0).setChanged();
+			helper.assertTrue(menu.getSlot(2).getItem().is(Items.GOLD_INGOT),
+					"Reroll must retain offer 1 so the server stays aligned with the displayed client selection");
 		} finally {
 			player.containerMenu = previousMenu;
 			villager.setTradingPlayer(null);
