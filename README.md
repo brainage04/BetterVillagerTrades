@@ -1,6 +1,6 @@
 # BetterVillagerTrades
 
-BetterVillagerTrades is a server-side Fabric and NeoForge mod for Minecraft 26.2 that improves villager trading without requiring modded clients.
+BetterVillagerTrades is a server-side Fabric and NeoForge mod for Minecraft 26.3 that improves villager trading without requiring modded clients.
 
 Vanilla clients can sneak-right-click an eligible villager while holding an emerald. The emerald is not consumed. Players with BetterVillagerTrades installed on the client also receive **Reroll trades** and **Toggle filter** buttons beneath the standard trading screen.
 
@@ -28,7 +28,7 @@ For example, `/bettervillagertrades filter add minecraft:enchanted_book minecraf
 
 ## Getting started
 
-- Fabric Loader >=0.19.3 with Fabric API, or NeoForge >=26.2.0.88
+- Fabric Loader >=0.19.5 with Fabric API, or NeoForge >=26.3.0.99
 - Java 25 or newer
 
 Install exactly one matching server JAR: the Fabric JAR with Fabric API, or the NeoForge JAR with NeoForge. Vanilla clients can join. Installing the matching mod on a client is optional and only adds the trading-screen controls.
