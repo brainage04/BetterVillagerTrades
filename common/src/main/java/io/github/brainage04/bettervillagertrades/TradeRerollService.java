@@ -14,7 +14,6 @@ import net.minecraft.world.item.trading.MerchantOffers;
 
 import java.util.Optional;
 
-/** Validates and performs player-requested villager trade rerolls. */
 public final class TradeRerollService {
 	private TradeRerollService() {
 	}

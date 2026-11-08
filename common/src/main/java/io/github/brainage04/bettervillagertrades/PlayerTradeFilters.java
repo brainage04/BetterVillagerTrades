@@ -17,7 +17,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-/** Persistent, per-player desired-trade filters. */
 public final class PlayerTradeFilters extends SavedData {
 	private static final Codec<UUID> UUID_CODEC = Codec.STRING.xmap(UUID::fromString, UUID::toString);
 	private static final Codec<PlayerTradeFilters> CODEC = RecordCodecBuilder.create(instance -> instance.group(

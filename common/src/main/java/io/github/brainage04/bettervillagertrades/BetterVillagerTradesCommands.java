@@ -18,7 +18,6 @@ import net.minecraft.world.item.enchantment.Enchantment;
 import java.util.List;
 import java.util.Optional;
 
-/** Player commands used directly and by the optional merchant-screen buttons. */
 public final class BetterVillagerTradesCommands {
 	private static final String ITEM_ARGUMENT = "item";
 	private static final String ENCHANTMENT_ARGUMENT = "enchantment";

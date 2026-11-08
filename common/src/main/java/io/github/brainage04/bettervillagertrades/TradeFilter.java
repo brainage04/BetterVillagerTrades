@@ -13,7 +13,6 @@ import net.minecraft.world.item.enchantment.ItemEnchantments;
 
 import java.util.Optional;
 
-/** A player-owned filter that protects matching villager trade outputs from rerolls. */
 public record TradeFilter(Identifier item, Optional<Identifier> enchantment) {
 	public static final Codec<TradeFilter> CODEC = RecordCodecBuilder.create(instance -> instance.group(
 			Identifier.CODEC.fieldOf("item").forGetter(TradeFilter::item),

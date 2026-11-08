@@ -22,11 +22,6 @@ import net.minecraft.world.item.trading.ItemCost;
 import net.minecraft.world.item.trading.MerchantOffer;
 import net.minecraft.world.item.trading.MerchantOffers;
 
-/**
- * Loader-neutral server GameTest bodies. Both loaders compile this source set into their GameTest
- * mods: Fabric runs them through {@code @GameTest} methods, NeoForge through registered test
- * functions and {@code test_instance} data.
- */
 public final class BetterVillagerTradesGameTests {
 	private BetterVillagerTradesGameTests() {
 	}

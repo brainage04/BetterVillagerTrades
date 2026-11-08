@@ -9,8 +9,8 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.registries.RegisterEvent;
 
 /**
- * Registers the shared GameTests as NeoForge test functions. Each function needs a matching
- * {@code data/<mod_id>/test_instance/<name>.json} in this source set's resources.
+ * Each function needs a matching {@code data/<mod_id>/test_instance/<name>.json} in this source set's
+ * resources.
  */
 @EventBusSubscriber(modid = BetterVillagerTrades.MOD_ID)
 public final class BetterVillagerTradesNeoForgeGameTestRegistration {
