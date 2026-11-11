@@ -1,8 +1,8 @@
 # BetterVillagerTrades icon
 
-## What this is
+## Overview
 
-The mod's icon: `icon.png` — 512x512 RGBA PNG, 3 011 bytes,
+The mod's icon is `icon.png`: a 512x512 RGBA PNG, 3 011 bytes,
 sha256 `8ff7bda71439ddb312a827510d956a6490379de762e0f3a1b59af5d718b0d965`. It is the native
 32x32 composition described below enlarged **16x with NEAREST** (the icon rule of 2026-10-02:
 square, a power of two, 512 or 1024 px). The mod ships byte-identical copies at
@@ -14,18 +14,18 @@ head** (full 8x10 face plus its nose) enlarged 2x and centred.
 
 ## How it was made
 
-**Method: generated pixel art from vanilla textures.** This is *not* an in-game screenshot and
-*not* a Blender render. It is a deterministic offline composition of official Minecraft
-textures with Pillow; the only pixel operations used are nearest-neighbour enlargement,
-alpha compositing and a transparent-border trim.
+**Method: generated pixel art from vanilla textures**, a deterministic offline composition of
+official Minecraft textures with Pillow (not an in-game screenshot and not a Blender render);
+the only pixel operations used are nearest-neighbour enlargement, alpha compositing and a
+transparent-border trim.
 
 | | |
 |---|---|
 | Tool | Pillow 12.3.0 on Python 3.13 (`provenance/render.py`, the `BetterVillagerTrades` block) |
 | Background source | official Java 1.21.4 `assets/minecraft/textures/mob_effect/luck.png` (18x18, sha256 `6289a3a1…`), pinned by URL + member + sha256 in `provenance.json` |
-| Background handling | the texture's fully transparent 1-pixel padding is cropped off (`(1,1)-(17,17)`) to give exactly 16x16 of content — a trim, never a resample — then doubled to 32x32 |
+| Background handling | the texture's fully transparent 1-pixel padding is cropped off (`(1,1)-(17,17)`) to give exactly 16x16 of content (a trim, not a resample), then doubled to 32x32 |
 | Foreground source | official Java 1.21.4 `assets/minecraft/textures/entity/villager/villager.png` (sha256 `dca7cc3e…`) |
-| Foreground geometry | the **full 8x10 villager face** UV `(8,8)-(16,18)` — all ten rows including the chin, not the 8x8 player crop — with the nose's front UV `(26,2)-(28,6)` overlaid at `(3,6)`; then doubled to 16x20 and centred at `(8,6)` on the 32x32 canvas |
+| Foreground geometry | the **full 8x10 villager face** UV `(8,8)-(16,18)`, all ten rows including the chin rather than the 8x8 player crop, with the nose's front UV `(26,2)-(28,6)` overlaid at `(3,6)`; then doubled to 16x20 and centred at `(8,6)` on the 32x32 canvas |
 | Composition | 32x32 canvas, background at `(0,0)`, face on top at `(8,6)` |
 | Final size | the 32x32 composition enlarged 16x with NEAREST to 512x512 (`better-villager-trades-512.png`) |
 
@@ -67,7 +67,7 @@ itself never downloads anything; it only reads `sources/`.
 ## Notes
 
 * The villager head is 8x10, unlike a player head's 8x8, and this icon deliberately uses all ten
-  rows plus the nose quad — a plain 8x8 crop of the villager texture would cut the chin.
+  rows plus the nose quad; a plain 8x8 crop of the villager texture would cut the chin.
 * The Luck texture ships with a 1-pixel fully transparent border; it is cropped, not scaled, so
   the doubling stays on the native pixel grid.
 * The sources are official Mojang Java 1.21.4 client textures, extracted from the pinned
