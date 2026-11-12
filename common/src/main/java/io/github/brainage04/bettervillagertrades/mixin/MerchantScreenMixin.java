@@ -1,9 +1,11 @@
 package io.github.brainage04.bettervillagertrades.mixin;
 
+import io.github.brainage04.bettervillagertrades.BetterVillagerTradesCommands;
 import io.github.brainage04.bettervillagertrades.TradeFilter;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.inventory.MerchantScreen;
+import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.MerchantMenu;
@@ -25,13 +27,19 @@ public abstract class MerchantScreenMixin extends AbstractContainerScreen<Mercha
 
     @Inject(method = "init", at = @At("TAIL"))
     private void betterVillagerTrades$addControls(CallbackInfo ci) {
+        ClientPacketListener connection = minecraft.getConnection();
+        if (connection == null
+                || !BetterVillagerTradesCommands.isRegistered(connection.getCommands())) {
+            return;
+        }
         int controlsY = topPos + imageHeight + 4;
         addRenderableWidget(
                 Button.builder(
                                 Component.translatable("bettervillagertrades.button.reroll"),
                                 button ->
                                         betterVillagerTrades$sendCommand(
-                                                "bettervillagertrades reroll"))
+                                                BetterVillagerTradesCommands.ROOT_LITERAL
+                                                        + " reroll"))
                         .bounds(leftPos + 5, controlsY, 96, 20)
                         .build());
         addRenderableWidget(
@@ -50,7 +58,9 @@ public abstract class MerchantScreenMixin extends AbstractContainerScreen<Mercha
         }
         TradeFilter filter = TradeFilter.fromStack(offers.get(shopItem).getResult());
         betterVillagerTrades$sendCommand(
-                "bettervillagertrades filter toggle " + filter.commandArguments());
+                BetterVillagerTradesCommands.ROOT_LITERAL
+                        + " filter toggle "
+                        + filter.commandArguments());
     }
 
     @Unique

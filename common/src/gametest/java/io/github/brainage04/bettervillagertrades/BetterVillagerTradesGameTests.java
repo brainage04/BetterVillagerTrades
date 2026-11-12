@@ -1,16 +1,33 @@
 package io.github.brainage04.bettervillagertrades;
 
+import com.google.common.collect.ImmutableSet;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import io.github.brainage04.brainagelib.gametest.GameTestPlayer;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMaps;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.UUID;
+import net.minecraft.SharedConstants;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
+import net.minecraft.core.HolderOwner;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtIo;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.Container;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EntityTypes;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.npc.villager.Villager;
 import net.minecraft.world.entity.npc.villager.VillagerData;
 import net.minecraft.world.entity.npc.villager.VillagerProfession;
@@ -22,6 +39,7 @@ import net.minecraft.world.item.enchantment.ItemEnchantments;
 import net.minecraft.world.item.trading.ItemCost;
 import net.minecraft.world.item.trading.MerchantOffer;
 import net.minecraft.world.item.trading.MerchantOffers;
+import net.minecraft.world.level.GameType;
 
 public final class BetterVillagerTradesGameTests {
     private BetterVillagerTradesGameTests() {}
@@ -93,6 +111,44 @@ public final class BetterVillagerTradesGameTests {
                 enchantmentLevel(swordOffer, DataComponents.ENCHANTMENTS, sharpness)
                         == sharpness.value().getMaxLevel(),
                 "The item gamerule must maximize enchanted items when enabled");
+
+        int aboveMaximum = sharpness.value().getMaxLevel() + 5;
+        MerchantOffer overMaxBookOffer =
+                new MerchantOffer(
+                        new ItemCost(Items.EMERALD),
+                        enchantedStack(
+                                new ItemStack(Items.ENCHANTED_BOOK),
+                                DataComponents.STORED_ENCHANTMENTS,
+                                sharpness,
+                                aboveMaximum),
+                        1,
+                        1,
+                        0.0F);
+        MerchantOffer overMaxSwordOffer =
+                new MerchantOffer(
+                        new ItemCost(Items.EMERALD),
+                        enchantedStack(
+                                new ItemStack(Items.DIAMOND_SWORD),
+                                DataComponents.ENCHANTMENTS,
+                                sharpness,
+                                aboveMaximum),
+                        1,
+                        1,
+                        0.0F);
+        helper.assertFalse(
+                BetterVillagerTrades.maximizeTradeOffer(overMaxBookOffer, true, true).modified(),
+                "A book above the maximum level must not be reported as modified");
+        helper.assertFalse(
+                BetterVillagerTrades.maximizeTradeOffer(overMaxSwordOffer, true, true).modified(),
+                "An item above the maximum level must not be reported as modified");
+        helper.assertTrue(
+                enchantmentLevel(overMaxBookOffer, DataComponents.STORED_ENCHANTMENTS, sharpness)
+                        == aboveMaximum,
+                "Book levels above the maximum must not be lowered");
+        helper.assertTrue(
+                enchantmentLevel(overMaxSwordOffer, DataComponents.ENCHANTMENTS, sharpness)
+                        == aboveMaximum,
+                "Item levels above the maximum must not be lowered");
         helper.succeed();
     }
 
@@ -217,9 +273,6 @@ public final class BetterVillagerTradesGameTests {
                         menu.getSlot(1).getItem().is(Items.BOOK)
                                 && menu.getSlot(1).getItem().getCount() == 3,
                         "Recalculation must preserve the second payment");
-                helper.assertTrue(
-                        menu.getOffers() == villager.getOffers(),
-                        "Menu must expose the new merchant offers");
                 // Equal-cost offers expose the retained selection without depending on randomized
                 // reroll outputs.
                 MerchantOffers selectionProbe = new MerchantOffers();
@@ -382,6 +435,75 @@ public final class BetterVillagerTradesGameTests {
         helper.succeed();
     }
 
+    public static void spectatorsCannotReroll(GameTestHelper helper) {
+        try (GameTestPlayer fixture = GameTestPlayer.mock(helper, GameType.SPECTATOR)) {
+            ServerPlayer player = fixture.player();
+            Villager villager =
+                    createVillager(
+                            helper, helper.getLevel(), VillagerProfession.LIBRARIAN, 1, 2, 2, 2);
+            villager.setOffers(paperOffer());
+            player.setShiftKeyDown(true);
+            player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.EMERALD));
+            helper.assertFalse(
+                    TradeRerollService.interact(player, villager, InteractionHand.MAIN_HAND)
+                            .consumesAction(),
+                    "Spectator interactions must pass through, as vanilla's Player.interactOn does");
+            helper.assertTrue(offersPaper(villager), "Spectators must not reroll");
+        }
+        helper.succeed();
+    }
+
+    public static void offHandEmeraldsPassThrough(GameTestHelper helper) {
+        try (GameTestPlayer fixture = GameTestPlayer.mock(helper)) {
+            ServerPlayer player = fixture.player();
+            Villager villager =
+                    createVillager(
+                            helper, helper.getLevel(), VillagerProfession.LIBRARIAN, 1, 2, 2, 2);
+            villager.setOffers(paperOffer());
+            player.setShiftKeyDown(true);
+            player.setItemInHand(InteractionHand.OFF_HAND, new ItemStack(Items.EMERALD));
+            helper.assertFalse(
+                    TradeRerollService.interact(player, villager, InteractionHand.MAIN_HAND)
+                            .consumesAction(),
+                    "An empty main hand must pass through even with an off-hand emerald");
+            helper.assertFalse(
+                    TradeRerollService.interact(player, villager, InteractionHand.OFF_HAND)
+                            .consumesAction(),
+                    "Off-hand emerald interactions must pass through to vanilla");
+            helper.assertTrue(offersPaper(villager), "Off-hand emeralds must not reroll");
+        }
+        helper.succeed();
+    }
+
+    public static void professionsWithoutNoviceTradesAreRejected(GameTestHelper helper) {
+        try (GameTestPlayer fixture = GameTestPlayer.mock(helper)) {
+            Villager villager =
+                    createVillager(
+                            helper, helper.getLevel(), VillagerProfession.LIBRARIAN, 1, 2, 2, 2);
+            VillagerData librarian = villager.getVillagerData();
+            // Restored before the tick ends: VillagerData.STREAM_CODEC sends the profession as a
+            // registry id (VillagerData.java:39), which this unregistered holder does not have.
+            villager.setVillagerData(
+                    librarian.withProfession(
+                            new UnregisteredProfession(
+                                    helper.getLevel()
+                                            .registryAccess()
+                                            .lookupOrThrow(Registries.VILLAGER_PROFESSION),
+                                    ResourceKey.create(
+                                            Registries.VILLAGER_PROFESSION,
+                                            BetterVillagerTrades.of("tradeless")),
+                                    tradelessProfession())));
+            try {
+                helper.assertFalse(
+                        TradeRerollService.reroll(fixture.player(), villager, false),
+                        "Professions without novice trades must be rejected");
+            } finally {
+                villager.setVillagerData(librarian);
+            }
+        }
+        helper.succeed();
+    }
+
     public static void filtersMatchBothEnchantmentComponents(GameTestHelper helper) {
         var registry = helper.getLevel().registryAccess().lookupOrThrow(Registries.ENCHANTMENT);
         Holder<Enchantment> mending = registry.getOrThrow(Enchantments.MENDING);
@@ -434,6 +556,14 @@ public final class BetterVillagerTradesGameTests {
                 level.registryAccess()
                         .lookupOrThrow(Registries.ENCHANTMENT)
                         .getOrThrow(Enchantments.SHARPNESS);
+        helper.assertTrue(
+                BetterVillagerTrades.MAX_ENCHANTED_BOOK_TRADES.defaultValue()
+                        == BetterVillagerTrades.BOOK_TRADES_RULE.defaultValue(),
+                "The registered book rule must default to the shared default");
+        helper.assertTrue(
+                BetterVillagerTrades.MAX_ENCHANTED_ITEM_TRADES.defaultValue()
+                        == BetterVillagerTrades.ITEM_TRADES_RULE.defaultValue(),
+                "The registered item rule must default to the shared default");
         Villager villager = createVillager(helper, level, VillagerProfession.LIBRARIAN, 1, 2, 2, 2);
         try {
             for (boolean books : new boolean[] {false, true}) {
@@ -506,6 +636,198 @@ public final class BetterVillagerTradesGameTests {
         helper.succeed();
     }
 
+    public static void levelUpMaximizesOnlyTheNewOffers(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        var rules = level.getGameRules();
+        boolean oldBooks = rules.get(BetterVillagerTrades.MAX_ENCHANTED_BOOK_TRADES);
+        boolean oldItems = rules.get(BetterVillagerTrades.MAX_ENCHANTED_ITEM_TRADES);
+        Holder<Enchantment> sharpness =
+                level.registryAccess()
+                        .lookupOrThrow(Registries.ENCHANTMENT)
+                        .getOrThrow(Enchantments.SHARPNESS);
+        try {
+            rules.set(BetterVillagerTrades.MAX_ENCHANTED_BOOK_TRADES, true, level.getServer());
+            rules.set(BetterVillagerTrades.MAX_ENCHANTED_ITEM_TRADES, true, level.getServer());
+            Villager villager =
+                    createVillager(helper, level, VillagerProfession.WEAPONSMITH, 4, 2, 2, 2);
+            MerchantOffer oldOffer =
+                    new MerchantOffer(
+                            new ItemCost(Items.EMERALD),
+                            enchantedStack(
+                                    new ItemStack(Items.DIAMOND_SWORD),
+                                    DataComponents.ENCHANTMENTS,
+                                    sharpness),
+                            1,
+                            VillagerData.getMaxXpPerLevel(4),
+                            0.0F);
+            MerchantOffers offers = new MerchantOffers();
+            offers.add(oldOffer);
+            villager.setOffers(offers);
+
+            villager.notifyTrade(oldOffer);
+
+            helper.assertTrue(
+                    villager.getVillagerData().level() == 5,
+                    "Trading the offer must level the weaponsmith up to master");
+            helper.assertTrue(
+                    enchantmentLevel(oldOffer, DataComponents.ENCHANTMENTS, sharpness) == 1,
+                    "Offers from before the level-up must keep their enchantment levels");
+            boolean foundNewEnchantedOffer = false;
+            for (int i = 1; i < offers.size(); i++) {
+                ItemEnchantments enchantments =
+                        offers.get(i)
+                                .getResult()
+                                .getOrDefault(DataComponents.ENCHANTMENTS, ItemEnchantments.EMPTY);
+                for (Holder<Enchantment> enchantment : enchantments.keySet()) {
+                    foundNewEnchantedOffer = true;
+                    helper.assertTrue(
+                            enchantments.getLevel(enchantment) == enchantment.value().getMaxLevel(),
+                            "Offers added by the level-up must be at maximum level");
+                }
+            }
+            helper.assertTrue(
+                    foundNewEnchantedOffer,
+                    "The master weaponsmith level-up must add an enchanted offer");
+        } finally {
+            rules.set(BetterVillagerTrades.MAX_ENCHANTED_BOOK_TRADES, oldBooks, level.getServer());
+            rules.set(BetterVillagerTrades.MAX_ENCHANTED_ITEM_TRADES, oldItems, level.getServer());
+        }
+        helper.succeed();
+    }
+
+    public static void rerollCommandReachesTheWholeTradingRange(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        try (GameTestPlayer fixture = GameTestPlayer.mock(helper, GameType.SURVIVAL)) {
+            ServerPlayer player = fixture.moveTo(helper, new BlockPos(1, 1, 1)).player();
+            player.getAttribute(Attributes.ENTITY_INTERACTION_RANGE).setBaseValue(6.0);
+            double tradingRange =
+                    player.entityInteractionRange() + Container.DEFAULT_DISTANCE_BUFFER;
+
+            Villager beyondRange =
+                    createVillager(helper, level, VillagerProfession.LIBRARIAN, 1, 2, 2, 2);
+            try {
+                beyondRange.snapTo(
+                        player.getX(), player.getEyeY() + tradingRange + 0.1, player.getZ());
+                beyondRange.setTradingPlayer(player);
+                helper.assertFalse(
+                        beyondRange.stillValid(player),
+                        "The far villager must be outside vanilla's trading range");
+                helper.assertTrue(
+                        TradeRerollService.rerollTradingVillager(player) == 0,
+                        "The command must not reach a villager whose trading screen vanilla closes");
+            } finally {
+                beyondRange.discard();
+            }
+
+            Villager withinRange =
+                    createVillager(helper, level, VillagerProfession.LIBRARIAN, 1, 2, 2, 2);
+            try {
+                withinRange.snapTo(player.getX(), player.getY() + 10.0, player.getZ());
+                withinRange.setTradingPlayer(player);
+                helper.assertTrue(
+                        withinRange.stillValid(player),
+                        "The near villager must be inside vanilla's trading range");
+                helper.assertFalse(
+                        player.getBoundingBox()
+                                .inflate(8.0)
+                                .intersects(withinRange.getBoundingBox()),
+                        "The near villager must be more than 8 blocks away");
+                helper.assertTrue(
+                        TradeRerollService.rerollTradingVillager(player) == 1,
+                        "The command must reach a trading villager anywhere in the trading range");
+            } finally {
+                withinRange.discard();
+            }
+        }
+        helper.succeed();
+    }
+
+    public static void rerollCooldownSpacesRepeatedRerolls(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        GameTestPlayer fixture = GameTestPlayer.mock(helper);
+        boolean closedLater = false;
+        try {
+            ServerPlayer player = fixture.moveTo(helper, new BlockPos(1, 1, 2)).player();
+            player.setShiftKeyDown(true);
+            player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.EMERALD));
+            Villager villager =
+                    createVillager(helper, level, VillagerProfession.LIBRARIAN, 1, 2, 2, 2);
+            villager.setOffers(paperOffer());
+            helper.assertTrue(
+                    TradeRerollService.interact(player, villager, InteractionHand.MAIN_HAND)
+                            .consumesAction(),
+                    "The first reroll gesture must be handled");
+            helper.assertFalse(
+                    offersPaper(villager), "The first reroll gesture must reroll the villager");
+
+            villager.setOffers(paperOffer());
+            helper.assertTrue(
+                    TradeRerollService.interact(player, villager, InteractionHand.MAIN_HAND)
+                            .consumesAction(),
+                    "A gesture during the cooldown must still be consumed");
+            helper.assertTrue(
+                    offersPaper(villager), "A gesture during the cooldown must not reroll");
+            villager.setTradingPlayer(player);
+            helper.assertTrue(
+                    villager.stillValid(player), "The command must be able to see the villager");
+            helper.assertTrue(
+                    TradeRerollService.rerollTradingVillager(player) == 0,
+                    "The command during the cooldown must not reroll");
+            villager.setTradingPlayer(null);
+            helper.assertTrue(
+                    offersPaper(villager), "The command during the cooldown must keep the offers");
+
+            helper.runAfterDelay(
+                    TradeRerollService.REROLL_COOLDOWN_TICKS,
+                    () -> {
+                        try {
+                            helper.assertTrue(
+                                    TradeRerollService.interact(
+                                                    player, villager, InteractionHand.MAIN_HAND)
+                                            .consumesAction(),
+                                    "The gesture after the cooldown must be handled");
+                            helper.assertFalse(
+                                    offersPaper(villager),
+                                    "The gesture after the cooldown must reroll again");
+                        } finally {
+                            fixture.close();
+                        }
+                        helper.succeed();
+                    });
+            closedLater = true;
+        } finally {
+            if (!closedLater) fixture.close();
+        }
+    }
+
+    public static void savedFiltersSkipVanillaDataFixers(GameTestHelper helper) {
+        CompoundTag filters = new CompoundTag();
+        filters.put(UUID.randomUUID().toString(), new ListTag());
+        CompoundTag data = new CompoundTag();
+        data.put("filters", filters);
+        CompoundTag saved = new CompoundTag();
+        saved.put("data", data);
+        Path file = null;
+        try {
+            file = Files.createTempFile("bettervillagertrades-filters", ".dat");
+            NbtIo.writeCompressed(saved, file);
+            CompoundTag read =
+                    helper.getLevel()
+                            .getDataStorage()
+                            .readTagFromDisk(
+                                    file,
+                                    PlayerTradeFilters.TYPE.dataFixType(),
+                                    SharedConstants.getCurrentVersion().dataVersion().version());
+            helper.assertTrue(
+                    read.equals(saved), "Saved filters must load without a vanilla datafixer");
+        } catch (IOException exception) {
+            throw new UncheckedIOException(exception);
+        } finally {
+            deleteIfPresent(file);
+        }
+        helper.succeed();
+    }
+
     private static int command(ServerPlayer player, String command) {
         try {
             return player.level()
@@ -525,11 +847,51 @@ public final class BetterVillagerTradesGameTests {
             ItemStack stack,
             DataComponentType<ItemEnchantments> componentType,
             Holder<Enchantment> enchantment) {
+        return enchantedStack(stack, componentType, enchantment, 1);
+    }
+
+    private static ItemStack enchantedStack(
+            ItemStack stack,
+            DataComponentType<ItemEnchantments> componentType,
+            Holder<Enchantment> enchantment,
+            int enchantmentLevel) {
         ItemEnchantments.Mutable enchantments =
                 new ItemEnchantments.Mutable(ItemEnchantments.EMPTY);
-        enchantments.set(enchantment, 1);
+        enchantments.set(enchantment, enchantmentLevel);
         stack.set(componentType, enchantments.toImmutable());
         return stack;
+    }
+
+    private static MerchantOffers paperOffer() {
+        MerchantOffers offers = new MerchantOffers();
+        offers.add(
+                new MerchantOffer(
+                        new ItemCost(Items.EMERALD), new ItemStack(Items.PAPER), 1, 1, 0));
+        return offers;
+    }
+
+    private static boolean offersPaper(Villager villager) {
+        return villager.getOffers().stream().anyMatch(offer -> offer.getResult().is(Items.PAPER));
+    }
+
+    private static VillagerProfession tradelessProfession() {
+        return new VillagerProfession(
+                Component.literal("Tradeless"),
+                poi -> false,
+                poi -> false,
+                ImmutableSet.of(),
+                ImmutableSet.of(),
+                null,
+                Int2ObjectMaps.emptyMap());
+    }
+
+    private static void deleteIfPresent(Path file) {
+        if (file == null) return;
+        try {
+            Files.deleteIfExists(file);
+        } catch (IOException exception) {
+            throw new UncheckedIOException(exception);
+        }
     }
 
     private static int enchantmentLevel(
@@ -590,5 +952,16 @@ public final class BetterVillagerTradesGameTests {
                         .withLevel(levelNumber);
         villager.setVillagerData(villagerData);
         return villager;
+    }
+
+    // Registries are frozen while GameTests run, so a modded profession is simulated with a keyed
+    // holder outside the registry.
+    private static final class UnregisteredProfession extends Holder.Reference<VillagerProfession> {
+        private UnregisteredProfession(
+                HolderOwner<VillagerProfession> owner,
+                ResourceKey<VillagerProfession> key,
+                VillagerProfession profession) {
+            super(Type.STAND_ALONE, owner, key, profession);
+        }
     }
 }

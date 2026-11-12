@@ -1,44 +1,53 @@
 package io.github.brainage04.bettervillagertrades;
 
+import java.util.Map;
 import java.util.Optional;
+import java.util.WeakHashMap;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.Container;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.npc.villager.Villager;
-import net.minecraft.world.entity.npc.villager.VillagerProfession;
+import net.minecraft.world.entity.npc.villager.VillagerData;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.MerchantMenu;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.trading.MerchantOffers;
 
 public final class TradeRerollService {
+    public static final int REROLL_COOLDOWN_TICKS = 10;
+
+    private static final Map<ServerPlayer, Integer> COOLDOWN_END_TICKS = new WeakHashMap<>();
+
     private TradeRerollService() {}
 
     public static InteractionResult interact(Player player, Entity target, InteractionHand hand) {
         if (!(target instanceof Villager villager)
+                || player.isSpectator()
+                || hand != InteractionHand.MAIN_HAND
                 || !player.isShiftKeyDown()
-                || !player.getItemInHand(hand).is(Items.EMERALD)) {
+                || !player.getMainHandItem().is(Items.EMERALD)) {
             return InteractionResult.PASS;
         }
-        if (player.level().isClientSide()) {
-            return InteractionResult.SUCCESS;
-        }
         if (player instanceof ServerPlayer serverPlayer) {
-            reroll(serverPlayer, villager, true);
+            rerollUnlessCoolingDown(serverPlayer, villager);
         }
         return InteractionResult.SUCCESS;
     }
 
     public static int rerollTradingVillager(ServerPlayer player) {
+        // AbstractVillager.stillValid (AbstractVillager.java:305) keeps the trading screen open
+        // out to the entity interaction range plus 4 blocks, Container.DEFAULT_DISTANCE_BUFFER.
+        double tradingRange = player.entityInteractionRange() + Container.DEFAULT_DISTANCE_BUFFER;
         Optional<Villager> villager =
                 player
                         .level()
                         .getEntitiesOfClass(
                                 Villager.class,
-                                player.getBoundingBox().inflate(8.0),
-                                candidate -> candidate.getTradingPlayer() == player)
+                                player.getBoundingBox().inflate(tradingRange),
+                                candidate -> candidate.stillValid(player))
                         .stream()
                         .findFirst();
         if (villager.isEmpty()) {
@@ -48,7 +57,20 @@ public final class TradeRerollService {
                             "Open a villager trading screen before using this reroll command."));
             return 0;
         }
-        return reroll(player, villager.get(), true) ? 1 : 0;
+        return rerollUnlessCoolingDown(player, villager.get()) ? 1 : 0;
+    }
+
+    private static boolean rerollUnlessCoolingDown(ServerPlayer player, Villager villager) {
+        int tick = player.level().getServer().getTickCount();
+        Integer cooldownEnd = COOLDOWN_END_TICKS.get(player);
+        if (cooldownEnd != null && tick < cooldownEnd) {
+            return false;
+        }
+        boolean rerolled = reroll(player, villager, true);
+        if (rerolled) {
+            COOLDOWN_END_TICKS.put(player, tick + REROLL_COOLDOWN_TICKS);
+        }
+        return rerolled;
     }
 
     public static boolean reroll(ServerPlayer player, Villager villager, boolean sendFeedback) {
@@ -85,7 +107,6 @@ public final class TradeRerollService {
         reroller.betterVillagerTrades$rerollTrades(player.level());
         if (player.containerMenu instanceof MerchantMenu menu
                 && villager.getTradingPlayer() == player) {
-            menu.setOffers(villager.getOffers());
             menu.getSlot(0).setChanged();
             player.sendMerchantOffers(
                     menu.containerId,
@@ -114,15 +135,13 @@ public final class TradeRerollService {
                     "bettervillagertrades.reroll.baby",
                     "Baby villagers do not have trades to reroll.");
         }
-        var profession =
-                villager.getVillagerData().profession().unwrapKey().orElse(VillagerProfession.NONE);
-        if (profession.equals(VillagerProfession.NONE)
-                || profession.equals(VillagerProfession.NITWIT)) {
+        VillagerData data = villager.getVillagerData();
+        if (data.profession().value().getTrades(data.level()) == null) {
             return Component.translatableWithFallback(
                     "bettervillagertrades.reroll.no_profession",
                     "This villager needs a trading profession before its trades can be rerolled.");
         }
-        if (villager.getVillagerData().level() != 1 || villager.getVillagerXp() != 0) {
+        if (data.level() != 1 || villager.getVillagerXp() != 0) {
             return Component.translatableWithFallback(
                     "bettervillagertrades.reroll.experienced",
                     "Only novice villagers with no trade experience can be rerolled.");

@@ -61,5 +61,33 @@ public final class BetterVillagerTradesNeoForgeGameTestRegistration {
                 BuiltInRegistries.TEST_FUNCTION.key(),
                 BetterVillagerTrades.of("reroll_recalculates_open_merchant_result"),
                 () -> BetterVillagerTradesGameTests::rerollRecalculatesOpenMerchantResult);
+        event.register(
+                BuiltInRegistries.TEST_FUNCTION.key(),
+                BetterVillagerTrades.of("spectators_cannot_reroll"),
+                () -> BetterVillagerTradesGameTests::spectatorsCannotReroll);
+        event.register(
+                BuiltInRegistries.TEST_FUNCTION.key(),
+                BetterVillagerTrades.of("off_hand_emeralds_pass_through"),
+                () -> BetterVillagerTradesGameTests::offHandEmeraldsPassThrough);
+        event.register(
+                BuiltInRegistries.TEST_FUNCTION.key(),
+                BetterVillagerTrades.of("professions_without_novice_trades_are_rejected"),
+                () -> BetterVillagerTradesGameTests::professionsWithoutNoviceTradesAreRejected);
+        event.register(
+                BuiltInRegistries.TEST_FUNCTION.key(),
+                BetterVillagerTrades.of("level_up_maximizes_only_the_new_offers"),
+                () -> BetterVillagerTradesGameTests::levelUpMaximizesOnlyTheNewOffers);
+        event.register(
+                BuiltInRegistries.TEST_FUNCTION.key(),
+                BetterVillagerTrades.of("reroll_command_reaches_the_whole_trading_range"),
+                () -> BetterVillagerTradesGameTests::rerollCommandReachesTheWholeTradingRange);
+        event.register(
+                BuiltInRegistries.TEST_FUNCTION.key(),
+                BetterVillagerTrades.of("reroll_cooldown_spaces_repeated_rerolls"),
+                () -> BetterVillagerTradesGameTests::rerollCooldownSpacesRepeatedRerolls);
+        event.register(
+                BuiltInRegistries.TEST_FUNCTION.key(),
+                BetterVillagerTrades.of("saved_filters_skip_vanilla_data_fixers"),
+                () -> BetterVillagerTradesGameTests::savedFiltersSkipVanillaDataFixers);
     }
 }

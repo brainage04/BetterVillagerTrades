@@ -1,13 +1,19 @@
 package io.github.brainage04.bettervillagertrades;
 
+import com.mojang.brigadier.tree.ArgumentCommandNode;
+import com.mojang.brigadier.tree.CommandNode;
+import com.mojang.brigadier.tree.RootCommandNode;
 import io.github.brainage04.minecraftmodconventions.ClientGameTestServers;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.inventory.MerchantScreen;
+import net.minecraft.network.protocol.game.ClientboundCommandsPacket;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.npc.villager.Villager;
@@ -19,6 +25,24 @@ import net.minecraft.world.item.trading.MerchantOffers;
 
 @SuppressWarnings("UnstableApiUsage")
 public final class BetterVillagerTradesClientGameTest implements FabricClientGameTest {
+    private static final ClientboundCommandsPacket.NodeInspector<Object> NO_COMMAND_DETAILS =
+            new ClientboundCommandsPacket.NodeInspector<>() {
+                @Override
+                public Identifier suggestionId(ArgumentCommandNode<Object, ?> node) {
+                    return null;
+                }
+
+                @Override
+                public boolean isExecutable(CommandNode<Object> node) {
+                    return false;
+                }
+
+                @Override
+                public boolean isRestricted(CommandNode<Object> node) {
+                    return false;
+                }
+            };
+
     @Override
     public void runTest(ClientGameTestContext context) {
         ClientGameTestServers.withDedicatedServer(
@@ -93,6 +117,17 @@ public final class BetterVillagerTradesClientGameTest implements FabricClientGam
                                 });
 
                         BetterVillagerTradesShowcase.showMaxEquipment(context);
+
+                        context.runOnClient(
+                                client ->
+                                        client.getConnection()
+                                                .handleCommands(
+                                                        new ClientboundCommandsPacket(
+                                                                new RootCommandNode<Object>(),
+                                                                NO_COMMAND_DETAILS)));
+                        server.runOnServer(BetterVillagerTradesClientGameTest::openMerchantScreen);
+                        context.waitForScreen(MerchantScreen.class);
+                        assertNoMerchantControls(context);
                     } finally {
                         server.runOnServer(BetterVillagerTradesShowcase::cleanup);
                     }
@@ -132,21 +167,35 @@ public final class BetterVillagerTradesClientGameTest implements FabricClientGam
     private static void assertMerchantControls(ClientGameTestContext context) {
         context.runOnClient(
                 client -> {
-                    if (!(client.gui.screen() instanceof MerchantScreen screen)) {
-                        throw new AssertionError(
-                                "Expected the villager trading screen to be open.");
-                    }
-                    List<String> buttonLabels =
-                            screen.children().stream()
-                                    .filter(Button.class::isInstance)
-                                    .map(Button.class::cast)
-                                    .map(button -> button.getMessage().getString())
-                                    .toList();
+                    List<String> buttonLabels = merchantButtonLabels(client);
                     if (!buttonLabels.contains("Reroll trades")
                             || !buttonLabels.contains("Toggle filter")) {
                         throw new AssertionError(
                                 "Expected both BetterVillagerTrades controls in the trading screen.");
                     }
                 });
+    }
+
+    private static void assertNoMerchantControls(ClientGameTestContext context) {
+        context.runOnClient(
+                client -> {
+                    List<String> buttonLabels = merchantButtonLabels(client);
+                    if (buttonLabels.contains("Reroll trades")
+                            || buttonLabels.contains("Toggle filter")) {
+                        throw new AssertionError(
+                                "A server without the bettervillagertrades command must not get the trading-screen controls.");
+                    }
+                });
+    }
+
+    private static List<String> merchantButtonLabels(Minecraft client) {
+        if (!(client.gui.screen() instanceof MerchantScreen screen)) {
+            throw new AssertionError("Expected the villager trading screen to be open.");
+        }
+        return screen.children().stream()
+                .filter(Button.class::isInstance)
+                .map(Button.class::cast)
+                .map(button -> button.getMessage().getString())
+                .toList();
     }
 }

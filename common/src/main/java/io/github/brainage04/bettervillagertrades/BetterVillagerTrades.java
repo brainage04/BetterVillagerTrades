@@ -27,6 +27,12 @@ public final class BetterVillagerTrades {
     public static final String MOD_NAME = "BetterVillagerTrades";
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_NAME);
 
+    public static final BooleanRule BOOK_TRADES_RULE =
+            new BooleanRule("max_enchanted_book_trades", true);
+    public static final BooleanRule ITEM_TRADES_RULE =
+            new BooleanRule("max_enchanted_item_trades", true);
+    public static final List<BooleanRule> GAME_RULES = List.of(BOOK_TRADES_RULE, ITEM_TRADES_RULE);
+
     public static GameRule<Boolean> MAX_ENCHANTED_BOOK_TRADES;
     public static GameRule<Boolean> MAX_ENCHANTED_ITEM_TRADES;
 
@@ -107,8 +113,8 @@ public final class BetterVillagerTrades {
             return;
         }
 
-        MAX_ENCHANTED_BOOK_TRADES = gameRules.register("max_enchanted_book_trades", true);
-        MAX_ENCHANTED_ITEM_TRADES = gameRules.register("max_enchanted_item_trades", true);
+        MAX_ENCHANTED_BOOK_TRADES = gameRules.register(BOOK_TRADES_RULE);
+        MAX_ENCHANTED_ITEM_TRADES = gameRules.register(ITEM_TRADES_RULE);
         LOGGER.info("{} initialized.", MOD_NAME);
     }
 
@@ -126,7 +132,7 @@ public final class BetterVillagerTrades {
         for (Holder<Enchantment> enchantment : enchantments.keySet()) {
             int oldLevel = enchantments.getLevel(enchantment);
             int maxLevel = enchantment.value().getMaxLevel();
-            if (oldLevel == maxLevel) continue;
+            if (oldLevel >= maxLevel) continue;
 
             mutable.set(enchantment, maxLevel);
             changes.add(new EnchantmentChange(enchantment.getRegisteredName(), oldLevel, maxLevel));
@@ -151,8 +157,8 @@ public final class BetterVillagerTrades {
                             offers.get(i),
                             level.getGameRules().get(MAX_ENCHANTED_BOOK_TRADES),
                             level.getGameRules().get(MAX_ENCHANTED_ITEM_TRADES));
-            if (modification.modified()) {
-                LOGGER.info(
+            if (modification.modified() && LOGGER.isDebugEnabled()) {
+                LOGGER.debug(
                         buildTradeModificationLog(
                                 new TradeContext(profession, villagerLevel, i + 1),
                                 modification.changes()));
@@ -161,14 +167,16 @@ public final class BetterVillagerTrades {
     }
 
     private static String titleCase(Identifier identifier) {
-        String[] words = identifier.getPath().split("_");
-        return Arrays.stream(words)
+        return Arrays.stream(identifier.getPath().split("_"))
+                .filter(word -> !word.isEmpty())
                 .map(word -> word.substring(0, 1).toUpperCase(Locale.ROOT) + word.substring(1))
                 .collect(Collectors.joining(" "));
     }
 
+    public record BooleanRule(String name, boolean defaultValue) {}
+
     @FunctionalInterface
     public interface GameRuleRegistrar {
-        GameRule<Boolean> register(String name, boolean defaultValue);
+        GameRule<Boolean> register(BooleanRule rule);
     }
 }

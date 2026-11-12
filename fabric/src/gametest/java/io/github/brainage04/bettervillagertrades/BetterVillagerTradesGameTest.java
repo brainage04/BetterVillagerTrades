@@ -43,4 +43,39 @@ public final class BetterVillagerTradesGameTest {
     public void rerollRecalculatesOpenMerchantResult(GameTestHelper helper) {
         BetterVillagerTradesGameTests.rerollRecalculatesOpenMerchantResult(helper);
     }
+
+    @GameTest
+    public void spectatorsCannotReroll(GameTestHelper helper) {
+        BetterVillagerTradesGameTests.spectatorsCannotReroll(helper);
+    }
+
+    @GameTest
+    public void offHandEmeraldsPassThrough(GameTestHelper helper) {
+        BetterVillagerTradesGameTests.offHandEmeraldsPassThrough(helper);
+    }
+
+    @GameTest
+    public void professionsWithoutNoviceTradesAreRejected(GameTestHelper helper) {
+        BetterVillagerTradesGameTests.professionsWithoutNoviceTradesAreRejected(helper);
+    }
+
+    @GameTest
+    public void levelUpMaximizesOnlyTheNewOffers(GameTestHelper helper) {
+        BetterVillagerTradesGameTests.levelUpMaximizesOnlyTheNewOffers(helper);
+    }
+
+    @GameTest
+    public void rerollCommandReachesTheWholeTradingRange(GameTestHelper helper) {
+        BetterVillagerTradesGameTests.rerollCommandReachesTheWholeTradingRange(helper);
+    }
+
+    @GameTest(maxTicks = 40)
+    public void rerollCooldownSpacesRepeatedRerolls(GameTestHelper helper) {
+        BetterVillagerTradesGameTests.rerollCooldownSpacesRepeatedRerolls(helper);
+    }
+
+    @GameTest
+    public void savedFiltersSkipVanillaDataFixers(GameTestHelper helper) {
+        BetterVillagerTradesGameTests.savedFiltersSkipVanillaDataFixers(helper);
+    }
 }

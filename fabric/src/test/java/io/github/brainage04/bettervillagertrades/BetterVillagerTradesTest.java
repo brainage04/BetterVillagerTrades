@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.google.gson.JsonObject;
 import com.mojang.serialization.JsonOps;
 import io.github.brainage04.bettervillagertrades.fabric.BetterVillagerTradesFabric;
 import java.util.List;
@@ -11,6 +12,9 @@ import java.util.Optional;
 import java.util.UUID;
 import net.minecraft.SharedConstants;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.Bootstrap;
 import net.minecraft.world.entity.npc.villager.VillagerProfession;
 import net.minecraft.world.flag.FeatureFlags;
@@ -40,6 +44,20 @@ class BetterVillagerTradesTest {
                 "Modified enchants for Trade 2 with Novice Librarian Villager - minecraft:sharpness 1 -> minecraft:sharpness 5",
                 BetterVillagerTrades.buildTradeModificationLog(
                         new BetterVillagerTrades.TradeContext(VillagerProfession.LIBRARIAN, 1, 2),
+                        List.of(
+                                new BetterVillagerTrades.EnchantmentChange(
+                                        "minecraft:sharpness", 1, 5))));
+    }
+
+    @Test
+    void formatsProfessionIdsWithEmptyWords() {
+        ResourceKey<VillagerProfession> profession =
+                ResourceKey.create(
+                        Registries.VILLAGER_PROFESSION, Identifier.parse("test:_odd__name"));
+        assertEquals(
+                "Modified enchants for Trade 1 with Novice Odd Name Villager - minecraft:sharpness 1 -> minecraft:sharpness 5",
+                BetterVillagerTrades.buildTradeModificationLog(
+                        new BetterVillagerTrades.TradeContext(profession, 1, 1),
                         List.of(
                                 new BetterVillagerTrades.EnchantmentChange(
                                         "minecraft:sharpness", 1, 5))));
@@ -87,5 +105,33 @@ class BetterVillagerTradesTest {
         assertFalse(restored.clear(firstPlayer));
         assertEquals(List.of(swords), restored.get(secondPlayer));
         assertEquals(List.of(books), filters.get(firstPlayer));
+    }
+
+    @Test
+    void savedFiltersKeepValidPlayersWhenAnotherKeyIsMalformed() {
+        PlayerTradeFilters filters = new PlayerTradeFilters();
+        UUID validPlayer = new UUID(0, 1);
+        TradeFilter books =
+                new TradeFilter(
+                        BuiltInRegistries.ITEM.getKey(Items.ENCHANTED_BOOK), Optional.empty());
+        filters.add(validPlayer, books);
+        JsonObject encoded =
+                PlayerTradeFilters.TYPE
+                        .codec()
+                        .encodeStart(JsonOps.INSTANCE, filters)
+                        .getOrThrow()
+                        .getAsJsonObject();
+        JsonObject players = encoded.getAsJsonObject("filters");
+        players.add("not-a-uuid", players.get(validPlayer.toString()).deepCopy());
+
+        // SavedDataStorage.readSavedData keeps a partial parse result
+        // (SavedDataStorage.java:93-95).
+        PlayerTradeFilters restored =
+                PlayerTradeFilters.TYPE
+                        .codec()
+                        .parse(JsonOps.INSTANCE, encoded)
+                        .resultOrPartial()
+                        .orElseThrow();
+        assertEquals(List.of(books), restored.get(validPlayer));
     }
 }

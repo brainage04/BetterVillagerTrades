@@ -18,14 +18,19 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.enchantment.Enchantment;
 
 public final class BetterVillagerTradesCommands {
+    public static final String ROOT_LITERAL = "bettervillagertrades";
     private static final String ITEM_ARGUMENT = "item";
     private static final String ENCHANTMENT_ARGUMENT = "enchantment";
 
     private BetterVillagerTradesCommands() {}
 
+    public static boolean isRegistered(CommandDispatcher<?> dispatcher) {
+        return dispatcher.getRoot().getChild(ROOT_LITERAL) != null;
+    }
+
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(
-                Commands.literal("bettervillagertrades")
+                Commands.literal(ROOT_LITERAL)
                         .then(
                                 Commands.literal("reroll")
                                         .executes(

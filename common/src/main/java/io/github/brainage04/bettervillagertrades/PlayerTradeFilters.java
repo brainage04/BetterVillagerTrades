@@ -9,32 +9,35 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import net.minecraft.core.UUIDUtil;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.util.datafix.DataFixTypes;
 import net.minecraft.world.item.trading.MerchantOffers;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.world.level.saveddata.SavedDataType;
 
 public final class PlayerTradeFilters extends SavedData {
-    private static final Codec<UUID> UUID_CODEC =
-            Codec.STRING.xmap(UUID::fromString, UUID::toString);
     private static final Codec<PlayerTradeFilters> CODEC =
             RecordCodecBuilder.create(
                     instance ->
                             instance.group(
                                             Codec.unboundedMap(
-                                                            UUID_CODEC, TradeFilter.CODEC.listOf())
+                                                            UUIDUtil.STRING_CODEC,
+                                                            TradeFilter.CODEC.listOf())
                                                     .optionalFieldOf("filters", Map.of())
                                                     .forGetter(PlayerTradeFilters::snapshot))
                                     .apply(instance, PlayerTradeFilters::new));
 
+    // No vanilla datafixer applies to mod data. Both loaders skip datafixing for a null type:
+    // Fabric
+    // API's fabric-object-builder-api-v1 SavedDataStorageMixin.handleNullDataFixType and NeoForge's
+    // SavedDataType/SavedDataStorage patches (26.3.0.99).
     public static final SavedDataType<PlayerTradeFilters> TYPE =
             new SavedDataType<>(
                     BetterVillagerTrades.of("player_trade_filters"),
                     PlayerTradeFilters::new,
                     CODEC,
-                    DataFixTypes.SAVED_DATA_MAP_DATA);
+                    null);
 
     private final Map<UUID, List<TradeFilter>> filters = new HashMap<>();
 

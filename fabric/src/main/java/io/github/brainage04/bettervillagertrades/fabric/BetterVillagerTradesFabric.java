@@ -7,19 +7,16 @@ import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 import net.fabricmc.fabric.api.gamerule.v1.GameRuleBuilder;
-import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.gamerules.GameRuleCategory;
 
 public final class BetterVillagerTradesFabric implements ModInitializer {
     @Override
     public void onInitialize() {
         BetterVillagerTrades.initialize(
-                (name, defaultValue) ->
-                        GameRuleBuilder.forBoolean(defaultValue)
+                rule ->
+                        GameRuleBuilder.forBoolean(rule.defaultValue())
                                 .category(GameRuleCategory.MISC)
-                                .buildAndRegister(
-                                        Identifier.fromNamespaceAndPath(
-                                                BetterVillagerTrades.MOD_ID, name)));
+                                .buildAndRegister(BetterVillagerTrades.of(rule.name())));
         CommandRegistrationCallback.EVENT.register(
                 (dispatcher, registryAccess, environment) ->
                         BetterVillagerTradesCommands.register(dispatcher));

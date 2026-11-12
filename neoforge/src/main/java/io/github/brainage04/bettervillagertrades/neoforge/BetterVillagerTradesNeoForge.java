@@ -5,6 +5,9 @@ import com.mojang.serialization.Codec;
 import io.github.brainage04.bettervillagertrades.BetterVillagerTrades;
 import io.github.brainage04.bettervillagertrades.BetterVillagerTradesCommands;
 import io.github.brainage04.bettervillagertrades.TradeRerollService;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.flag.FeatureFlagSet;
@@ -24,15 +27,21 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 public final class BetterVillagerTradesNeoForge {
     private static final DeferredRegister<GameRule<?>> GAME_RULES =
             DeferredRegister.create(Registries.GAME_RULE, BetterVillagerTrades.MOD_ID);
-    private static final DeferredHolder<GameRule<?>, GameRule<Boolean>> MAX_ENCHANTED_BOOK_TRADES =
-            registerBoolean("max_enchanted_book_trades");
-    private static final DeferredHolder<GameRule<?>, GameRule<Boolean>> MAX_ENCHANTED_ITEM_TRADES =
-            registerBoolean("max_enchanted_item_trades");
+    private static final Map<
+                    BetterVillagerTrades.BooleanRule,
+                    DeferredHolder<GameRule<?>, GameRule<Boolean>>>
+            GAME_RULE_HOLDERS =
+                    BetterVillagerTrades.GAME_RULES.stream()
+                            .collect(
+                                    Collectors.toUnmodifiableMap(
+                                            Function.identity(),
+                                            BetterVillagerTradesNeoForge::registerBoolean));
 
     public BetterVillagerTradesNeoForge(IEventBus modEventBus) {
         GAME_RULES.register(modEventBus);
         modEventBus.addListener(
-                (FMLCommonSetupEvent event) -> BetterVillagerTrades.initialize(this::gameRule));
+                (FMLCommonSetupEvent event) ->
+                        BetterVillagerTrades.initialize(rule -> GAME_RULE_HOLDERS.get(rule).get()));
         NeoForge.EVENT_BUS.addListener(
                 (RegisterCommandsEvent event) ->
                         BetterVillagerTradesCommands.register(event.getDispatcher()));
@@ -51,28 +60,19 @@ public final class BetterVillagerTradesNeoForge {
         }
     }
 
-    private static DeferredHolder<GameRule<?>, GameRule<Boolean>> registerBoolean(String name) {
+    private static DeferredHolder<GameRule<?>, GameRule<Boolean>> registerBoolean(
+            BetterVillagerTrades.BooleanRule rule) {
         return GAME_RULES.register(
-                name,
+                rule.name(),
                 () ->
                         new GameRule<>(
                                 GameRuleCategory.MISC,
                                 GameRuleType.BOOL,
                                 BoolArgumentType.bool(),
-                                (visitor, rule) -> visitor.visitBoolean(rule),
+                                (visitor, gameRule) -> visitor.visitBoolean(gameRule),
                                 Codec.BOOL,
                                 value -> value ? 1 : 0,
-                                true,
+                                rule.defaultValue(),
                                 FeatureFlagSet.of()));
-    }
-
-    private GameRule<Boolean> gameRule(String name, boolean defaultValue) {
-        return switch (name) {
-            case "max_enchanted_book_trades" -> MAX_ENCHANTED_BOOK_TRADES.get();
-            case "max_enchanted_item_trades" -> MAX_ENCHANTED_ITEM_TRADES.get();
-            default ->
-                    throw new IllegalArgumentException(
-                            "Unknown BetterVillagerTrades gamerule: " + name);
-        };
     }
 }
