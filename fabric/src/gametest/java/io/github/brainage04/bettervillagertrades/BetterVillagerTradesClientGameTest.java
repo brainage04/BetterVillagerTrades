@@ -1,5 +1,6 @@
 package io.github.brainage04.bettervillagertrades;
 
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.tree.ArgumentCommandNode;
 import com.mojang.brigadier.tree.CommandNode;
 import com.mojang.brigadier.tree.RootCommandNode;
@@ -11,6 +12,7 @@ import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.MerchantScreen;
 import net.minecraft.network.protocol.game.ClientboundCommandsPacket;
 import net.minecraft.resources.Identifier;
@@ -42,6 +44,7 @@ public final class BetterVillagerTradesClientGameTest implements FabricClientGam
                     return false;
                 }
             };
+    private static final List<String> CONTROL_LABELS = List.of("Reroll trades", "Toggle filter");
 
     @Override
     public void runTest(ClientGameTestContext context) {
@@ -63,7 +66,10 @@ public final class BetterVillagerTradesClientGameTest implements FabricClientGam
                                         client.player.containerMenu instanceof MerchantMenu menu
                                                 && !menu.getOffers().isEmpty());
                         BetterVillagerTradesShowcase.captionRerollControls(context);
-                        assertMerchantControls(context);
+                        assertMerchantControls(
+                                context,
+                                CONTROL_LABELS,
+                                "Expected both BetterVillagerTrades controls in the trading screen.");
                         AtomicBoolean serverState = new AtomicBoolean();
                         context.clickScreenButton("Toggle filter");
                         waitForServerCondition(
@@ -118,16 +124,34 @@ public final class BetterVillagerTradesClientGameTest implements FabricClientGam
 
                         BetterVillagerTradesShowcase.showMaxEquipment(context);
 
-                        context.runOnClient(
-                                client ->
-                                        client.getConnection()
-                                                .handleCommands(
-                                                        new ClientboundCommandsPacket(
-                                                                new RootCommandNode<Object>(),
-                                                                NO_COMMAND_DETAILS)));
-                        server.runOnServer(BetterVillagerTradesClientGameTest::openMerchantScreen);
-                        context.waitForScreen(MerchantScreen.class);
-                        assertNoMerchantControls(context);
+                        Runnable openOnServer =
+                                () ->
+                                        server.runOnServer(
+                                                BetterVillagerTradesClientGameTest
+                                                        ::openMerchantScreen);
+                        sendCommandTree(context, commandTree("reroll"));
+                        reopenMerchantScreen(context, openOnServer);
+                        assertMerchantControls(
+                                context,
+                                List.of("Reroll trades"),
+                                "Without filter toggle in the command tree, only Reroll trades"
+                                        + " must be shown.");
+
+                        sendCommandTree(context, commandTree("filter", "toggle"));
+                        reopenMerchantScreen(context, openOnServer);
+                        assertMerchantControls(
+                                context,
+                                List.of("Toggle filter"),
+                                "Without reroll in the command tree, only Toggle filter must be"
+                                        + " shown.");
+
+                        sendCommandTree(context, new RootCommandNode<>());
+                        reopenMerchantScreen(context, openOnServer);
+                        assertMerchantControls(
+                                context,
+                                List.of(),
+                                "A server without the bettervillagertrades command must not get"
+                                        + " the trading-screen controls.");
                     } finally {
                         server.runOnServer(BetterVillagerTradesShowcase::cleanup);
                     }
@@ -164,26 +188,46 @@ public final class BetterVillagerTradesClientGameTest implements FabricClientGam
         librarian.openTradingScreen(player, librarian.getDisplayName(), 1);
     }
 
-    private static void assertMerchantControls(ClientGameTestContext context) {
-        context.runOnClient(
-                client -> {
-                    List<String> buttonLabels = merchantButtonLabels(client);
-                    if (!buttonLabels.contains("Reroll trades")
-                            || !buttonLabels.contains("Toggle filter")) {
-                        throw new AssertionError(
-                                "Expected both BetterVillagerTrades controls in the trading screen.");
-                    }
-                });
+    private static RootCommandNode<Object> commandTree(String... path) {
+        LiteralArgumentBuilder<Object> node = LiteralArgumentBuilder.literal(path[path.length - 1]);
+        for (int i = path.length - 2; i >= 0; i--) {
+            node = LiteralArgumentBuilder.literal(path[i]).then(node);
+        }
+        RootCommandNode<Object> root = new RootCommandNode<>();
+        root.addChild(LiteralArgumentBuilder.literal("bettervillagertrades").then(node).build());
+        return root;
     }
 
-    private static void assertNoMerchantControls(ClientGameTestContext context) {
+    private static void sendCommandTree(
+            ClientGameTestContext context, RootCommandNode<Object> root) {
+        context.runOnClient(
+                client ->
+                        client.getConnection()
+                                .handleCommands(
+                                        new ClientboundCommandsPacket(root, NO_COMMAND_DETAILS)));
+    }
+
+    // The previous trading screen is still open, so waiting for any MerchantScreen could match it
+    // and see buttons built from the previous command tree.
+    private static void reopenMerchantScreen(ClientGameTestContext context, Runnable openOnServer) {
+        Screen previous = context.computeOnClient(client -> client.gui.screen());
+        openOnServer.run();
+        context.waitFor(
+                client ->
+                        client.gui.screen() instanceof MerchantScreen
+                                && client.gui.screen() != previous);
+    }
+
+    private static void assertMerchantControls(
+            ClientGameTestContext context, List<String> expected, String message) {
         context.runOnClient(
                 client -> {
-                    List<String> buttonLabels = merchantButtonLabels(client);
-                    if (buttonLabels.contains("Reroll trades")
-                            || buttonLabels.contains("Toggle filter")) {
-                        throw new AssertionError(
-                                "A server without the bettervillagertrades command must not get the trading-screen controls.");
+                    List<String> controls =
+                            merchantButtonLabels(client).stream()
+                                    .filter(CONTROL_LABELS::contains)
+                                    .toList();
+                    if (!controls.equals(expected)) {
+                        throw new AssertionError(message + " Shown: " + controls);
                     }
                 });
     }

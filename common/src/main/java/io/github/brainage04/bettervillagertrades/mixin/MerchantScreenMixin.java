@@ -28,26 +28,33 @@ public abstract class MerchantScreenMixin extends AbstractContainerScreen<Mercha
     @Inject(method = "init", at = @At("TAIL"))
     private void betterVillagerTrades$addControls(CallbackInfo ci) {
         ClientPacketListener connection = minecraft.getConnection();
-        if (connection == null
-                || !BetterVillagerTradesCommands.isRegistered(connection.getCommands())) {
+        if (connection == null) {
             return;
         }
         int controlsY = topPos + imageHeight + 4;
-        addRenderableWidget(
-                Button.builder(
-                                Component.translatable("bettervillagertrades.button.reroll"),
-                                button ->
-                                        betterVillagerTrades$sendCommand(
-                                                BetterVillagerTradesCommands.ROOT_LITERAL
-                                                        + " reroll"))
-                        .bounds(leftPos + 5, controlsY, 96, 20)
-                        .build());
-        addRenderableWidget(
-                Button.builder(
-                                Component.translatable("bettervillagertrades.button.filter"),
-                                button -> betterVillagerTrades$toggleSelectedFilter())
-                        .bounds(leftPos + 105, controlsY, 96, 20)
-                        .build());
+        if (BetterVillagerTradesCommands.isAvailable(
+                connection.getCommands(), BetterVillagerTradesCommands.REROLL_PATH)) {
+            addRenderableWidget(
+                    Button.builder(
+                                    Component.translatable("bettervillagertrades.button.reroll"),
+                                    button ->
+                                            betterVillagerTrades$sendCommand(
+                                                    String.join(
+                                                            " ",
+                                                            BetterVillagerTradesCommands
+                                                                    .REROLL_PATH)))
+                            .bounds(leftPos + 5, controlsY, 96, 20)
+                            .build());
+        }
+        if (BetterVillagerTradesCommands.isAvailable(
+                connection.getCommands(), BetterVillagerTradesCommands.FILTER_TOGGLE_PATH)) {
+            addRenderableWidget(
+                    Button.builder(
+                                    Component.translatable("bettervillagertrades.button.filter"),
+                                    button -> betterVillagerTrades$toggleSelectedFilter())
+                            .bounds(leftPos + 105, controlsY, 96, 20)
+                            .build());
+        }
     }
 
     @Unique
@@ -58,8 +65,8 @@ public abstract class MerchantScreenMixin extends AbstractContainerScreen<Mercha
         }
         TradeFilter filter = TradeFilter.fromStack(offers.get(shopItem).getResult());
         betterVillagerTrades$sendCommand(
-                BetterVillagerTradesCommands.ROOT_LITERAL
-                        + " filter toggle "
+                String.join(" ", BetterVillagerTradesCommands.FILTER_TOGGLE_PATH)
+                        + " "
                         + filter.commandArguments());
     }
 

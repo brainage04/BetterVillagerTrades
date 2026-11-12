@@ -18,31 +18,37 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.enchantment.Enchantment;
 
 public final class BetterVillagerTradesCommands {
-    public static final String ROOT_LITERAL = "bettervillagertrades";
+    private static final String ROOT_LITERAL = "bettervillagertrades";
+    private static final String REROLL_LITERAL = "reroll";
+    private static final String FILTER_LITERAL = "filter";
+    private static final String TOGGLE_LITERAL = "toggle";
+    public static final List<String> REROLL_PATH = List.of(ROOT_LITERAL, REROLL_LITERAL);
+    public static final List<String> FILTER_TOGGLE_PATH =
+            List.of(ROOT_LITERAL, FILTER_LITERAL, TOGGLE_LITERAL);
     private static final String ITEM_ARGUMENT = "item";
     private static final String ENCHANTMENT_ARGUMENT = "enchantment";
 
     private BetterVillagerTradesCommands() {}
 
-    public static boolean isRegistered(CommandDispatcher<?> dispatcher) {
-        return dispatcher.getRoot().getChild(ROOT_LITERAL) != null;
+    public static boolean isAvailable(CommandDispatcher<?> dispatcher, List<String> path) {
+        return dispatcher.findNode(path) != null;
     }
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(
                 Commands.literal(ROOT_LITERAL)
                         .then(
-                                Commands.literal("reroll")
+                                Commands.literal(REROLL_LITERAL)
                                         .executes(
                                                 context ->
                                                         TradeRerollService.rerollTradingVillager(
                                                                 context.getSource()
                                                                         .getPlayerOrException())))
                         .then(
-                                Commands.literal("filter")
+                                Commands.literal(FILTER_LITERAL)
                                         .then(filterMutation("add", Mutation.ADD))
                                         .then(filterMutation("remove", Mutation.REMOVE))
-                                        .then(filterMutation("toggle", Mutation.TOGGLE))
+                                        .then(filterMutation(TOGGLE_LITERAL, Mutation.TOGGLE))
                                         .then(
                                                 Commands.literal("list")
                                                         .executes(

@@ -136,15 +136,15 @@ public final class TradeRerollService {
                     "Baby villagers do not have trades to reroll.");
         }
         VillagerData data = villager.getVillagerData();
+        if (data.level() != VillagerData.MIN_VILLAGER_LEVEL || villager.getVillagerXp() != 0) {
+            return Component.translatableWithFallback(
+                    "bettervillagertrades.reroll.experienced",
+                    "Only novice villagers with no trade experience can be rerolled.");
+        }
         if (data.profession().value().getTrades(data.level()) == null) {
             return Component.translatableWithFallback(
                     "bettervillagertrades.reroll.no_profession",
                     "This villager needs a trading profession before its trades can be rerolled.");
-        }
-        if (data.level() != 1 || villager.getVillagerXp() != 0) {
-            return Component.translatableWithFallback(
-                    "bettervillagertrades.reroll.experienced",
-                    "Only novice villagers with no trade experience can be rerolled.");
         }
         if (villager.getOffers().stream().anyMatch(offer -> offer.getUses() > 0)) {
             return Component.translatableWithFallback(

@@ -3,6 +3,7 @@ package io.github.brainage04.bettervillagertrades;
 import com.google.common.collect.ImmutableSet;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import io.github.brainage04.brainagelib.gametest.GameTestPlayer;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMaps;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -21,6 +22,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -39,6 +41,8 @@ import net.minecraft.world.item.enchantment.ItemEnchantments;
 import net.minecraft.world.item.trading.ItemCost;
 import net.minecraft.world.item.trading.MerchantOffer;
 import net.minecraft.world.item.trading.MerchantOffers;
+import net.minecraft.world.item.trading.TradeSet;
+import net.minecraft.world.item.trading.TradeSets;
 import net.minecraft.world.level.GameType;
 
 public final class BetterVillagerTradesGameTests {
@@ -482,21 +486,34 @@ public final class BetterVillagerTradesGameTests {
                             helper, helper.getLevel(), VillagerProfession.LIBRARIAN, 1, 2, 2, 2);
             VillagerData librarian = villager.getVillagerData();
             // Restored before the tick ends: VillagerData.STREAM_CODEC sends the profession as a
-            // registry id (VillagerData.java:39), which this unregistered holder does not have.
-            villager.setVillagerData(
-                    librarian.withProfession(
-                            new UnregisteredProfession(
-                                    helper.getLevel()
-                                            .registryAccess()
-                                            .lookupOrThrow(Registries.VILLAGER_PROFESSION),
-                                    ResourceKey.create(
-                                            Registries.VILLAGER_PROFESSION,
-                                            BetterVillagerTrades.of("tradeless")),
-                                    tradelessProfession())));
+            // registry id (VillagerData.java:39), which these unregistered holders do not have.
             try {
-                helper.assertFalse(
-                        TradeRerollService.reroll(fixture.player(), villager, false),
+                villager.setVillagerData(
+                        librarian.withProfession(
+                                unregisteredProfession(
+                                        helper, "tradeless", Int2ObjectMaps.emptyMap())));
+                helper.assertTrue(
+                        deniedWith(fixture, villager, "bettervillagertrades.reroll.no_profession"),
                         "Professions without novice trades must be rejected");
+
+                Int2ObjectMap<ResourceKey<TradeSet>> noviceAndMaster =
+                        Int2ObjectMap.ofEntries(
+                                Int2ObjectMap.entry(
+                                        VillagerData.MIN_VILLAGER_LEVEL,
+                                        TradeSets.WEAPONSMITH_LEVEL_1),
+                                Int2ObjectMap.entry(
+                                        VillagerData.MAX_VILLAGER_LEVEL,
+                                        TradeSets.WEAPONSMITH_LEVEL_5));
+                villager.setVillagerData(
+                        librarian
+                                .withProfession(
+                                        unregisteredProfession(
+                                                helper, "novice_and_master", noviceAndMaster))
+                                .withLevel(3));
+                helper.assertTrue(
+                        deniedWith(fixture, villager, "bettervillagertrades.reroll.experienced"),
+                        "A villager above novice must be told it is not a novice, also at a"
+                                + " level its profession has no trades for");
             } finally {
                 villager.setVillagerData(librarian);
             }
@@ -874,15 +891,30 @@ public final class BetterVillagerTradesGameTests {
         return villager.getOffers().stream().anyMatch(offer -> offer.getResult().is(Items.PAPER));
     }
 
-    private static VillagerProfession tradelessProfession() {
-        return new VillagerProfession(
-                Component.literal("Tradeless"),
-                poi -> false,
-                poi -> false,
-                ImmutableSet.of(),
-                ImmutableSet.of(),
-                null,
-                Int2ObjectMaps.emptyMap());
+    private static Holder<VillagerProfession> unregisteredProfession(
+            GameTestHelper helper, String name, Int2ObjectMap<ResourceKey<TradeSet>> trades) {
+        return new UnregisteredProfession(
+                helper.getLevel().registryAccess().lookupOrThrow(Registries.VILLAGER_PROFESSION),
+                ResourceKey.create(Registries.VILLAGER_PROFESSION, BetterVillagerTrades.of(name)),
+                new VillagerProfession(
+                        Component.literal(name),
+                        poi -> false,
+                        poi -> false,
+                        ImmutableSet.of(),
+                        ImmutableSet.of(),
+                        null,
+                        trades));
+    }
+
+    private static boolean deniedWith(GameTestPlayer fixture, Villager villager, String key) {
+        fixture.clearMessages();
+        return !TradeRerollService.reroll(fixture.player(), villager, true)
+                && fixture.messages().stream()
+                        .anyMatch(
+                                message ->
+                                        message.getContents()
+                                                        instanceof TranslatableContents contents
+                                                && contents.getKey().equals(key));
     }
 
     private static void deleteIfPresent(Path file) {
