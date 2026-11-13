@@ -48,12 +48,12 @@ import net.minecraft.world.item.trading.MerchantOffers;
 import net.minecraft.world.item.trading.TradeSet;
 import net.minecraft.world.item.trading.TradeSets;
 import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.levelgen.PositionalRandomFactory;
 import net.minecraft.world.level.storage.loot.LootContext;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.functions.EnchantRandomlyFunction;
 import net.minecraft.world.level.storage.loot.functions.LootItemFunction;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
-import net.minecraft.world.level.levelgen.PositionalRandomFactory;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.phys.Vec3;
 
