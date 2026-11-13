@@ -14,6 +14,7 @@ import net.minecraft.SharedConstants;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderOwner;
+import net.minecraft.core.HolderSet;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
@@ -26,6 +27,9 @@ import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.tags.EnchantmentTags;
+import net.minecraft.util.RandomSource;
+import net.minecraft.util.Unit;
 import net.minecraft.world.Container;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EntityTypes;
@@ -44,6 +48,14 @@ import net.minecraft.world.item.trading.MerchantOffers;
 import net.minecraft.world.item.trading.TradeSet;
 import net.minecraft.world.item.trading.TradeSets;
 import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.storage.loot.LootContext;
+import net.minecraft.world.level.storage.loot.LootParams;
+import net.minecraft.world.level.storage.loot.functions.EnchantRandomlyFunction;
+import net.minecraft.world.level.storage.loot.functions.LootItemFunction;
+import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
+import net.minecraft.world.level.levelgen.PositionalRandomFactory;
+import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
+import net.minecraft.world.phys.Vec3;
 
 public final class BetterVillagerTradesGameTests {
     private BetterVillagerTradesGameTests() {}
@@ -153,6 +165,104 @@ public final class BetterVillagerTradesGameTests {
                 enchantmentLevel(overMaxSwordOffer, DataComponents.ENCHANTMENTS, sharpness)
                         == aboveMaximum,
                 "Item levels above the maximum must not be lowered");
+        helper.succeed();
+    }
+
+    public static void bookTradePriceFollowsTheMaxLevelFormula(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        Holder<Enchantment> sharpness =
+                level.registryAccess()
+                        .lookupOrThrow(Registries.ENCHANTMENT)
+                        .getOrThrow(Enchantments.SHARPNESS);
+        int maxLevel = sharpness.value().getMaxLevel();
+        Villager villager =
+                createVillager(helper, level, VillagerProfession.LIBRARIAN, 1, 2, 2, 2);
+        TradePriceRandom random =
+                new TradePriceRandom(
+                        sharpness.value().getMaxLevel() - sharpness.value().getMinLevel() + 1);
+        LootContext context =
+                new LootContext.Builder(
+                                new LootParams.Builder(level)
+                                        .withParameter(LootContextParams.ORIGIN, Vec3.ZERO)
+                                        .withParameter(LootContextParams.THIS_ENTITY, villager)
+                                        .withParameter(
+                                                LootContextParams
+                                                        .ADDITIONAL_COST_COMPONENT_ALLOWED,
+                                                Unit.INSTANCE)
+                                        .create(LootContextParamSets.VILLAGER_TRADE))
+                        .withOptionalRandomSource(random)
+                        .create(java.util.Optional.empty());
+        LootItemFunction function =
+                EnchantRandomlyFunction.randomEnchantment()
+                        .withEnchantment(sharpness)
+                        .includeAdditionalCostComponent()
+                        .build();
+
+        ItemStack book = function.apply(new ItemStack(Items.BOOK), context);
+
+        helper.assertTrue(
+                book.is(Items.ENCHANTED_BOOK),
+                "The trade's enchantment function must produce an enchanted book");
+        helper.assertTrue(
+                enchantmentLevel(
+                                book,
+                                DataComponents.STORED_ENCHANTMENTS,
+                                sharpness)
+                        == maxLevel,
+                "A trade's enchanted book must be rolled at the maximum level");
+        helper.assertTrue(
+                random.lastBound == 5 + maxLevel * 10,
+                "The emerald price must be drawn for the maximum level, so its bound must be "
+                        + (5 + maxLevel * 10)
+                        + " but vanilla drew "
+                        + random.lastBound);
+        helper.assertTrue(
+                book.getOrDefault(DataComponents.ADDITIONAL_TRADE_COST, -1)
+                        == 2 + random.lastDraw + 3 * maxLevel,
+                "The emerald price must follow vanilla's formula 2 + draw + 3 * level at the"
+                        + " maximum level");
+        helper.succeed();
+    }
+
+    public static void generatedBookTradePricesUseTheMaxLevel(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        HolderSet<Enchantment> doubleTradePrice =
+                level.registryAccess()
+                        .lookupOrThrow(Registries.ENCHANTMENT)
+                        .getOrThrow(EnchantmentTags.DOUBLE_TRADE_PRICE);
+        boolean foundBook = false;
+        for (int i = 0; i < 20; i++) {
+            Villager villager =
+                    createVillager(
+                            helper, level, VillagerProfession.LIBRARIAN, 1, 1 + (i % 5), 2, 1 + (i / 5));
+            for (MerchantOffer offer : villager.getOffers()) {
+                ItemEnchantments stored =
+                        offer.getResult()
+                                .getOrDefault(
+                                        DataComponents.STORED_ENCHANTMENTS,
+                                        ItemEnchantments.EMPTY);
+                if (stored.isEmpty()) continue;
+                foundBook = true;
+                for (Holder<Enchantment> enchantment : stored.keySet()) {
+                    // EnchantRandomlyFunction.java:98 draws 2 + [0, 5 + level * 10) + 3 * level per
+                    // enchantment, VillagerTrade.java:114-119 doubles it for the trade's
+                    // double_trade_price enchantments, and TradeCost.toItemCost clamps the count to
+                    // the item's stack size (TradeCost.java:34-37).
+                    int multiplier = doubleTradePrice.contains(enchantment) ? 2 : 1;
+                    int minimum =
+                            Math.min(64, multiplier * (3 * enchantment.value().getMaxLevel() + 2));
+                    helper.assertTrue(
+                            offer.getBaseCostA().count() >= minimum,
+                            "A generated enchanted book trade must cost at least "
+                                    + minimum
+                                    + " emeralds for "
+                                    + enchantment.getRegisteredName()
+                                    + " at its maximum level, but it costs "
+                                    + offer.getBaseCostA().count());
+                }
+            }
+        }
+        helper.assertTrue(foundBook, "Expected at least one generated enchanted book trade");
         helper.succeed();
     }
 
@@ -923,6 +1033,80 @@ public final class BetterVillagerTradesGameTests {
             Files.deleteIfExists(file);
         } catch (IOException exception) {
             throw new UncheckedIOException(exception);
+        }
+    }
+
+    private static int enchantmentLevel(
+            ItemStack stack,
+            DataComponentType<ItemEnchantments> componentType,
+            Holder<Enchantment> enchantment) {
+        return stack.getOrDefault(componentType, ItemEnchantments.EMPTY).getLevel(enchantment);
+    }
+
+    /**
+     * Draws from a fixed-seed source but rolls the minimum enchantment level, so a price drawn for
+     * the maximum level is distinguishable, and remembers the last draw for a price check.
+     */
+    private static final class TradePriceRandom implements RandomSource {
+        private final RandomSource delegate = RandomSource.create(48271L);
+        private final int levelSpan;
+        int lastBound = -1;
+        int lastDraw = -1;
+
+        private TradePriceRandom(int levelSpan) {
+            this.levelSpan = levelSpan;
+        }
+
+        @Override
+        public int nextInt(int bound) {
+            lastBound = bound;
+            lastDraw = bound == levelSpan ? 0 : delegate.nextInt(bound);
+            return lastDraw;
+        }
+
+        @Override
+        public RandomSource fork() {
+            return delegate.fork();
+        }
+
+        @Override
+        public PositionalRandomFactory forkPositional() {
+            return delegate.forkPositional();
+        }
+
+        @Override
+        public void setSeed(long seed) {
+            delegate.setSeed(seed);
+        }
+
+        @Override
+        public int nextInt() {
+            return delegate.nextInt();
+        }
+
+        @Override
+        public long nextLong() {
+            return delegate.nextLong();
+        }
+
+        @Override
+        public boolean nextBoolean() {
+            return delegate.nextBoolean();
+        }
+
+        @Override
+        public float nextFloat() {
+            return delegate.nextFloat();
+        }
+
+        @Override
+        public double nextDouble() {
+            return delegate.nextDouble();
+        }
+
+        @Override
+        public double nextGaussian() {
+            return delegate.nextGaussian();
         }
     }
 
