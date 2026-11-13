@@ -36,7 +36,15 @@ public final class TradeRerollService {
             // and must leave the interaction to the attempt packet it sends.
             return InteractionResult.PASS;
         }
-        if (rerollUnlessCoolingDown(serverPlayer, villager, false)) {
+        if (coolingDown(serverPlayer)) {
+            // A held use key sends one interaction every 4 ticks (Minecraft.java:1693,1965), so
+            // without this the sneak-click would reroll once and then open the screen 4 ticks
+            // later. The cooldown consumes the gesture, as it did before trading opened here.
+            return InteractionResult.SUCCESS;
+        }
+        // A refusal still sends its reason, as it did before the refusal earned a trading screen.
+        if (reroll(serverPlayer, villager, true)) {
+            startCooldown(serverPlayer);
             announceReroll(serverPlayer);
         } else {
             openTrading(serverPlayer, villager, hand);
@@ -89,16 +97,24 @@ public final class TradeRerollService {
 
     private static boolean rerollUnlessCoolingDown(
             ServerPlayer player, Villager villager, boolean announceDenial) {
-        int tick = player.level().getServer().getTickCount();
-        Integer cooldownEnd = COOLDOWN_END_TICKS.get(player);
-        if (cooldownEnd != null && tick < cooldownEnd) {
+        if (coolingDown(player)) {
             return false;
         }
         boolean rerolled = reroll(player, villager, announceDenial);
         if (rerolled) {
-            COOLDOWN_END_TICKS.put(player, tick + REROLL_COOLDOWN_TICKS);
+            startCooldown(player);
         }
         return rerolled;
+    }
+
+    private static boolean coolingDown(ServerPlayer player) {
+        Integer cooldownEnd = COOLDOWN_END_TICKS.get(player);
+        return cooldownEnd != null && player.level().getServer().getTickCount() < cooldownEnd;
+    }
+
+    private static void startCooldown(ServerPlayer player) {
+        COOLDOWN_END_TICKS.put(
+                player, player.level().getServer().getTickCount() + REROLL_COOLDOWN_TICKS);
     }
 
     private static void announceReroll(ServerPlayer player) {

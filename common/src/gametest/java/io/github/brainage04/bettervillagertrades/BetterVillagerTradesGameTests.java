@@ -782,13 +782,12 @@ public final class BetterVillagerTradesGameTests {
             helper.assertTrue(
                     TradeRerollService.interact(player, villager, InteractionHand.MAIN_HAND)
                             .consumesAction(),
-                    "A gesture during the cooldown must be handled so trading opens");
+                    "A gesture during the cooldown must be handled");
             helper.assertTrue(
                     offersPaper(villager), "A gesture during the cooldown must not reroll");
             helper.assertTrue(
-                    villager.getTradingPlayer() == player,
-                    "A gesture during the cooldown must open normal trading");
-            player.closeContainer();
+                    villager.getTradingPlayer() == null,
+                    "A gesture during the cooldown must not open trading");
             villager.setTradingPlayer(player);
             helper.assertTrue(
                     villager.stillValid(player), "The command must be able to see the villager");
@@ -839,8 +838,8 @@ public final class BetterVillagerTradesGameTests {
                     "The sneak-click on an experienced villager must be handled");
             helper.assertTrue(offersPaper(experienced), "A refused gesture must keep the offers");
             helper.assertTrue(
-                    fixture.messages().isEmpty(),
-                    "A gesture that opens trading must not also send a refusal message");
+                    toldWith(fixture, "bettervillagertrades.reroll.experienced"),
+                    "A gesture that opens trading must still say why it did not reroll");
             helper.assertTrue(
                     experienced.getTradingPlayer() == player,
                     "The sneak-click must open normal trading on a villager it cannot reroll");
@@ -855,6 +854,7 @@ public final class BetterVillagerTradesGameTests {
             PlayerTradeFilters filters = PlayerTradeFilters.get(level.getServer());
             try {
                 filters.add(player, TradeFilter.fromStack(new ItemStack(Items.PAPER)));
+                fixture.clearMessages();
                 helper.assertTrue(
                         TradeRerollService.interact(
                                         player, filteredOffers, InteractionHand.MAIN_HAND)
@@ -862,6 +862,9 @@ public final class BetterVillagerTradesGameTests {
                         "The sneak-click on a villager with a protected offer must be handled");
                 helper.assertTrue(
                         offersPaper(filteredOffers), "A protected villager must keep its offers");
+                helper.assertTrue(
+                        toldWith(fixture, "bettervillagertrades.reroll.protected"),
+                        "A protected villager must still say why its trades cannot reroll");
                 helper.assertTrue(
                         filteredOffers.getTradingPlayer() == player,
                         "A villager whose offers are protected must open normal trading");
@@ -964,12 +967,15 @@ public final class BetterVillagerTradesGameTests {
     private static boolean deniedWith(GameTestPlayer fixture, Villager villager, String key) {
         fixture.clearMessages();
         return !TradeRerollService.reroll(fixture.player(), villager, true)
-                && fixture.messages().stream()
-                        .anyMatch(
-                                message ->
-                                        message.getContents()
-                                                        instanceof TranslatableContents contents
-                                                && contents.getKey().equals(key));
+                && toldWith(fixture, key);
+    }
+
+    private static boolean toldWith(GameTestPlayer fixture, String key) {
+        return fixture.messages().stream()
+                .anyMatch(
+                        message ->
+                                message.getContents() instanceof TranslatableContents contents
+                                        && contents.getKey().equals(key));
     }
 
     private static void deleteIfPresent(Path file) {
