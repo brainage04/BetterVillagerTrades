@@ -861,8 +861,7 @@ public final class BetterVillagerTradesGameTests {
                                 .consumesAction(),
                         "The sneak-click on a villager with a protected offer must be handled");
                 helper.assertTrue(
-                        offersPaper(filteredOffers),
-                        "A protected villager must keep its offers");
+                        offersPaper(filteredOffers), "A protected villager must keep its offers");
                 helper.assertTrue(
                         filteredOffers.getTradingPlayer() == player,
                         "A villager whose offers are protected must open normal trading");

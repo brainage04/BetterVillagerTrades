@@ -45,12 +45,12 @@ public final class TradeRerollService {
     }
 
     private static void openTrading(ServerPlayer player, Villager villager, InteractionHand hand) {
-        // NeoForge will not trade while the player is sneaking: its Villager.mobInteract returns the
-        // Mob result, which opens nothing, when Player.isSecondaryUseActive is true (the
-        // isSecondaryUseActive branch the NeoForge patches add to Villager.mobInteract). Clearing
-        // the flag for this call opens trading through vanilla's own guards and screen on both
-        // loaders; the villager's interact never posts NeoForge's PlayerInteractEvent, so this
-        // cannot re-enter the mod.
+        // NeoForge will not trade while the player is sneaking: its Villager.mobInteract returns
+        // the Mob result, which opens nothing, when Player.isSecondaryUseActive is true (the
+        // isSecondaryUseActive branch its patches add to Villager.mobInteract). Clearing the flag
+        // for this call opens trading through vanilla's own guards and screen on both loaders. The
+        // villager's interact never posts NeoForge's PlayerInteractEvent, so this cannot re-enter
+        // the mod.
         boolean sneaking = player.isShiftKeyDown();
         player.setShiftKeyDown(false);
         try {
