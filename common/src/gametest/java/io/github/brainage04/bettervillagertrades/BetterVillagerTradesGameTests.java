@@ -239,8 +239,7 @@ public final class BetterVillagerTradesGameTests {
                 ItemEnchantments stored =
                         offer.getResult()
                                 .getOrDefault(
-                                        DataComponents.STORED_ENCHANTMENTS,
-                                        ItemEnchantments.EMPTY);
+                                        DataComponents.STORED_ENCHANTMENTS, ItemEnchantments.EMPTY);
                 if (stored.isEmpty()) continue;
                 foundBook = true;
                 for (Holder<Enchantment> enchantment : stored.keySet()) {
