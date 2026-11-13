@@ -31,9 +31,18 @@ public final class TradeRerollService {
                 || !player.getMainHandItem().is(Items.EMERALD)) {
             return InteractionResult.PASS;
         }
-        if (player instanceof ServerPlayer serverPlayer) {
-            rerollUnlessCoolingDown(serverPlayer, villager);
+        if (!(player instanceof ServerPlayer serverPlayer)) {
+            // Only the server holds the offers and the stored filters, so the client cannot decide
+            // and must leave the interaction to the attempt packet it sends.
+            return InteractionResult.PASS;
         }
+        if (!rerollUnlessCoolingDown(serverPlayer, villager, false)) {
+            // A villager that cannot be rerolled opens its trading screen instead, which is what
+            // vanilla does when the interaction is not consumed (Villager.mobInteract,
+            // Villager.java:266-294).
+            return InteractionResult.PASS;
+        }
+        announceReroll(serverPlayer);
         return InteractionResult.SUCCESS;
     }
 
@@ -57,26 +66,37 @@ public final class TradeRerollService {
                             "Open a villager trading screen before using this reroll command."));
             return 0;
         }
-        return rerollUnlessCoolingDown(player, villager.get()) ? 1 : 0;
+        if (!rerollUnlessCoolingDown(player, villager.get(), true)) {
+            return 0;
+        }
+        announceReroll(player);
+        return 1;
     }
 
-    private static boolean rerollUnlessCoolingDown(ServerPlayer player, Villager villager) {
+    private static boolean rerollUnlessCoolingDown(
+            ServerPlayer player, Villager villager, boolean announceDenial) {
         int tick = player.level().getServer().getTickCount();
         Integer cooldownEnd = COOLDOWN_END_TICKS.get(player);
         if (cooldownEnd != null && tick < cooldownEnd) {
             return false;
         }
-        boolean rerolled = reroll(player, villager, true);
+        boolean rerolled = reroll(player, villager, announceDenial);
         if (rerolled) {
             COOLDOWN_END_TICKS.put(player, tick + REROLL_COOLDOWN_TICKS);
         }
         return rerolled;
     }
 
-    public static boolean reroll(ServerPlayer player, Villager villager, boolean sendFeedback) {
+    private static void announceReroll(ServerPlayer player) {
+        player.sendSystemMessage(
+                Component.translatableWithFallback(
+                        "bettervillagertrades.reroll.success", "Villager trades rerolled."));
+    }
+
+    public static boolean reroll(ServerPlayer player, Villager villager, boolean announceDenial) {
         Component denial = eligibilityFailure(player, villager);
         if (denial != null) {
-            if (sendFeedback) player.sendSystemMessage(denial);
+            if (announceDenial) player.sendSystemMessage(denial);
             return false;
         }
 
@@ -84,7 +104,7 @@ public final class TradeRerollService {
         Optional<TradeFilter> protectedBy =
                 PlayerTradeFilters.get(player.level().getServer()).protectedBy(player, offers);
         if (protectedBy.isPresent()) {
-            if (sendFeedback) {
+            if (announceDenial) {
                 player.sendSystemMessage(
                         Component.translatableWithFallback(
                                 "bettervillagertrades.reroll.protected",
@@ -96,7 +116,7 @@ public final class TradeRerollService {
 
         if (!(villager instanceof VillagerTradeReroller reroller)) {
             BetterVillagerTrades.LOGGER.error("Villager reroll mixin was not applied.");
-            if (sendFeedback)
+            if (announceDenial)
                 player.sendSystemMessage(
                         Component.translatableWithFallback(
                                 "bettervillagertrades.reroll.unavailable",
@@ -117,10 +137,6 @@ public final class TradeRerollService {
                     villager.canRestock());
             menu.broadcastChanges();
         }
-        if (sendFeedback)
-            player.sendSystemMessage(
-                    Component.translatableWithFallback(
-                            "bettervillagertrades.reroll.success", "Villager trades rerolled."));
         return true;
     }
 

@@ -1,0 +1,7 @@
+{
+  "environment": "minecraft:default",
+  "structure": "minecraftmodconventions:empty",
+  "max_ticks": 40,
+  "type": "minecraft:function",
+  "function": "bettervillagertrades:sneak_click_on_unrerollable_villager_opens_trading"
+}
