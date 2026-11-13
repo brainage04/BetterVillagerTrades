@@ -75,6 +75,11 @@ public final class BetterVillagerTradesGameTest {
     }
 
     @GameTest
+    public void sneakClickOnUnrerollableVillagerOpensTrading(GameTestHelper helper) {
+        BetterVillagerTradesGameTests.sneakClickOnUnrerollableVillagerOpensTrading(helper);
+    }
+
+    @GameTest
     public void savedFiltersSkipVanillaDataFixers(GameTestHelper helper) {
         BetterVillagerTradesGameTests.savedFiltersSkipVanillaDataFixers(helper);
     }
