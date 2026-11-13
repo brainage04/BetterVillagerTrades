@@ -24,8 +24,8 @@ import org.spongepowered.asm.mixin.injection.Redirect;
  * exists, so a later pass over the offers cannot see what the enchantment added and cannot reprice
  * the maximum level; raising the level here lets vanilla compute that price itself.
  *
- * <p>ADDITIONAL_COST_COMPONENT_ALLOWED is set only for villager trades
- * (AbstractVillager.java:242), so chest and other loot keep their own rolls.
+ * <p>ADDITIONAL_COST_COMPONENT_ALLOWED is set only for villager trades (AbstractVillager.java:242),
+ * so chest and other loot keep their own rolls.
  */
 @Mixin(EnchantRandomlyFunction.class)
 public abstract class EnchantRandomlyFunctionMixin {

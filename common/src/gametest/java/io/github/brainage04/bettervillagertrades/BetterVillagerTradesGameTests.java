@@ -175,8 +175,7 @@ public final class BetterVillagerTradesGameTests {
                         .lookupOrThrow(Registries.ENCHANTMENT)
                         .getOrThrow(Enchantments.SHARPNESS);
         int maxLevel = sharpness.value().getMaxLevel();
-        Villager villager =
-                createVillager(helper, level, VillagerProfession.LIBRARIAN, 1, 2, 2, 2);
+        Villager villager = createVillager(helper, level, VillagerProfession.LIBRARIAN, 1, 2, 2, 2);
         TradePriceRandom random =
                 new TradePriceRandom(
                         sharpness.value().getMaxLevel() - sharpness.value().getMinLevel() + 1);
@@ -186,8 +185,7 @@ public final class BetterVillagerTradesGameTests {
                                         .withParameter(LootContextParams.ORIGIN, Vec3.ZERO)
                                         .withParameter(LootContextParams.THIS_ENTITY, villager)
                                         .withParameter(
-                                                LootContextParams
-                                                        .ADDITIONAL_COST_COMPONENT_ALLOWED,
+                                                LootContextParams.ADDITIONAL_COST_COMPONENT_ALLOWED,
                                                 Unit.INSTANCE)
                                         .create(LootContextParamSets.VILLAGER_TRADE))
                         .withOptionalRandomSource(random)
@@ -204,11 +202,7 @@ public final class BetterVillagerTradesGameTests {
                 book.is(Items.ENCHANTED_BOOK),
                 "The trade's enchantment function must produce an enchanted book");
         helper.assertTrue(
-                enchantmentLevel(
-                                book,
-                                DataComponents.STORED_ENCHANTMENTS,
-                                sharpness)
-                        == maxLevel,
+                enchantmentLevel(book, DataComponents.STORED_ENCHANTMENTS, sharpness) == maxLevel,
                 "A trade's enchanted book must be rolled at the maximum level");
         helper.assertTrue(
                 random.lastBound == 5 + maxLevel * 10,
@@ -234,7 +228,13 @@ public final class BetterVillagerTradesGameTests {
         for (int i = 0; i < 20; i++) {
             Villager villager =
                     createVillager(
-                            helper, level, VillagerProfession.LIBRARIAN, 1, 1 + (i % 5), 2, 1 + (i / 5));
+                            helper,
+                            level,
+                            VillagerProfession.LIBRARIAN,
+                            1,
+                            1 + (i % 5),
+                            2,
+                            1 + (i / 5));
             for (MerchantOffer offer : villager.getOffers()) {
                 ItemEnchantments stored =
                         offer.getResult()
