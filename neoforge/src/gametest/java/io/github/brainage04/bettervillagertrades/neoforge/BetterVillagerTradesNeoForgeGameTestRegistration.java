@@ -25,6 +25,14 @@ public final class BetterVillagerTradesNeoForgeGameTestRegistration {
                 () -> BetterVillagerTradesGameTests::generatedVillagerTradesAreMaxed);
         event.register(
                 BuiltInRegistries.TEST_FUNCTION.key(),
+                BetterVillagerTrades.of("book_trade_price_follows_the_max_level_formula"),
+                () -> BetterVillagerTradesGameTests::bookTradePriceFollowsTheMaxLevelFormula);
+        event.register(
+                BuiltInRegistries.TEST_FUNCTION.key(),
+                BetterVillagerTrades.of("generated_book_trade_prices_use_the_max_level"),
+                () -> BetterVillagerTradesGameTests::generatedBookTradePricesUseTheMaxLevel);
+        event.register(
+                BuiltInRegistries.TEST_FUNCTION.key(),
                 Identifier.fromNamespaceAndPath(
                         BetterVillagerTrades.MOD_ID,
                         "gamerules_independently_control_trade_outputs"),

@@ -14,6 +14,16 @@ public final class BetterVillagerTradesGameTest {
         BetterVillagerTradesGameTests.gamerulesIndependentlyControlBookAndItemTradeOutputs(helper);
     }
 
+    @GameTest
+    public void bookTradePriceFollowsTheMaxLevelFormula(GameTestHelper helper) {
+        BetterVillagerTradesGameTests.bookTradePriceFollowsTheMaxLevelFormula(helper);
+    }
+
+    @GameTest(maxTicks = 40)
+    public void generatedBookTradePricesUseTheMaxLevel(GameTestHelper helper) {
+        BetterVillagerTradesGameTests.generatedBookTradePricesUseTheMaxLevel(helper);
+    }
+
     @GameTest(maxTicks = 40)
     public void rerollsUntradedVillagersWithoutProtectedOffers(GameTestHelper helper) {
         BetterVillagerTradesGameTests.rerollsUntradedVillagersWithoutProtectedOffers(helper);
