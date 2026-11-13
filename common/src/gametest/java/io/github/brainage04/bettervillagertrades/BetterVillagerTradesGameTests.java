@@ -779,12 +779,16 @@ public final class BetterVillagerTradesGameTests {
                     offersPaper(villager), "The first reroll gesture must reroll the villager");
 
             villager.setOffers(paperOffer());
-            helper.assertFalse(
+            helper.assertTrue(
                     TradeRerollService.interact(player, villager, InteractionHand.MAIN_HAND)
                             .consumesAction(),
-                    "A gesture during the cooldown must pass through so vanilla opens trading");
+                    "A gesture during the cooldown must be handled so trading opens");
             helper.assertTrue(
                     offersPaper(villager), "A gesture during the cooldown must not reroll");
+            helper.assertTrue(
+                    villager.getTradingPlayer() == player,
+                    "A gesture during the cooldown must open normal trading");
+            player.closeContainer();
             villager.setTradingPlayer(player);
             helper.assertTrue(
                     villager.stillValid(player), "The command must be able to see the villager");
@@ -829,18 +833,14 @@ public final class BetterVillagerTradesGameTests {
                     createVillager(helper, level, VillagerProfession.LIBRARIAN, 2, 2, 1, 2);
             experienced.setOffers(paperOffer());
             fixture.clearMessages();
-            helper.assertFalse(
+            helper.assertTrue(
                     TradeRerollService.interact(player, experienced, InteractionHand.MAIN_HAND)
                             .consumesAction(),
-                    "An experienced villager must not consume the sneak-click");
+                    "The sneak-click on an experienced villager must be handled");
             helper.assertTrue(offersPaper(experienced), "A refused gesture must keep the offers");
             helper.assertTrue(
                     fixture.messages().isEmpty(),
                     "A gesture that opens trading must not also send a refusal message");
-            // Both loaders run vanilla's interaction only for a result that does not consume the
-            // action: Fabric cancels ServerGamePacketListenerImpl.handleInteract for any other
-            // result, and NeoForge cancels the event only when the result consumes it.
-            player.interactOn(experienced, InteractionHand.MAIN_HAND, experienced.position());
             helper.assertTrue(
                     experienced.getTradingPlayer() == player,
                     "The sneak-click must open normal trading on a villager it cannot reroll");
@@ -855,14 +855,17 @@ public final class BetterVillagerTradesGameTests {
             PlayerTradeFilters filters = PlayerTradeFilters.get(level.getServer());
             try {
                 filters.add(player, TradeFilter.fromStack(new ItemStack(Items.PAPER)));
-                helper.assertFalse(
+                helper.assertTrue(
                         TradeRerollService.interact(
                                         player, filteredOffers, InteractionHand.MAIN_HAND)
                                 .consumesAction(),
-                        "A villager with a protected offer must not consume the sneak-click");
+                        "The sneak-click on a villager with a protected offer must be handled");
                 helper.assertTrue(
                         offersPaper(filteredOffers),
                         "A protected villager must keep its offers");
+                helper.assertTrue(
+                        filteredOffers.getTradingPlayer() == player,
+                        "A villager whose offers are protected must open normal trading");
             } finally {
                 filters.clear(player);
             }

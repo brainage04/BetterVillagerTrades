@@ -36,14 +36,28 @@ public final class TradeRerollService {
             // and must leave the interaction to the attempt packet it sends.
             return InteractionResult.PASS;
         }
-        if (!rerollUnlessCoolingDown(serverPlayer, villager, false)) {
-            // A villager that cannot be rerolled opens its trading screen instead, which is what
-            // vanilla does when the interaction is not consumed (Villager.mobInteract,
-            // Villager.java:266-294).
-            return InteractionResult.PASS;
+        if (rerollUnlessCoolingDown(serverPlayer, villager, false)) {
+            announceReroll(serverPlayer);
+        } else {
+            openTrading(serverPlayer, villager, hand);
         }
-        announceReroll(serverPlayer);
         return InteractionResult.SUCCESS;
+    }
+
+    private static void openTrading(ServerPlayer player, Villager villager, InteractionHand hand) {
+        // NeoForge will not trade while the player is sneaking: its Villager.mobInteract returns the
+        // Mob result, which opens nothing, when Player.isSecondaryUseActive is true (the
+        // isSecondaryUseActive branch the NeoForge patches add to Villager.mobInteract). Clearing
+        // the flag for this call opens trading through vanilla's own guards and screen on both
+        // loaders; the villager's interact never posts NeoForge's PlayerInteractEvent, so this
+        // cannot re-enter the mod.
+        boolean sneaking = player.isShiftKeyDown();
+        player.setShiftKeyDown(false);
+        try {
+            villager.interact(player, hand, villager.position());
+        } finally {
+            player.setShiftKeyDown(sneaking);
+        }
     }
 
     public static int rerollTradingVillager(ServerPlayer player) {
