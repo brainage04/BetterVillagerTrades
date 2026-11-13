@@ -215,6 +215,35 @@ public final class BetterVillagerTradesGameTests {
                         == 2 + random.lastDraw + 3 * maxLevel,
                 "The emerald price must follow vanilla's formula 2 + draw + 3 * level at the"
                         + " maximum level");
+        TradePriceRandom lootRandom =
+                new TradePriceRandom(
+                        sharpness.value().getMaxLevel() - sharpness.value().getMinLevel() + 1);
+        LootContext lootContext =
+                new LootContext.Builder(
+                                new LootParams.Builder(level)
+                                        .withParameter(LootContextParams.ORIGIN, Vec3.ZERO)
+                                        .create(LootContextParamSets.CHEST))
+                        .withOptionalRandomSource(lootRandom)
+                        .create(java.util.Optional.empty());
+        ItemStack lootBook = function.apply(new ItemStack(Items.BOOK), lootContext);
+        helper.assertTrue(
+                enchantmentLevel(lootBook, DataComponents.STORED_ENCHANTMENTS, sharpness)
+                        == sharpness.value().getMinLevel(),
+                "Loot outside a villager trade must keep the level vanilla rolled, "
+                        + sharpness.value().getMinLevel());
+        var rules = level.getGameRules();
+        boolean oldBooks = rules.get(BetterVillagerTrades.MAX_ENCHANTED_BOOK_TRADES);
+        try {
+            rules.set(BetterVillagerTrades.MAX_ENCHANTED_BOOK_TRADES, false, level.getServer());
+            ItemStack unmaxedBook = function.apply(new ItemStack(Items.BOOK), context);
+            helper.assertTrue(
+                    enchantmentLevel(unmaxedBook, DataComponents.STORED_ENCHANTMENTS, sharpness)
+                            == sharpness.value().getMinLevel(),
+                    "With the book rule off, a trade must keep the level vanilla rolled, "
+                            + sharpness.value().getMinLevel());
+        } finally {
+            rules.set(BetterVillagerTrades.MAX_ENCHANTED_BOOK_TRADES, oldBooks, level.getServer());
+        }
         helper.succeed();
     }
 
