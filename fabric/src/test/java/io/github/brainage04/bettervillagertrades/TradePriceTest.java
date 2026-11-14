@@ -19,7 +19,9 @@ import net.minecraft.core.HolderSet;
 import net.minecraft.core.component.DataComponentMap;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.Bootstrap;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
@@ -48,8 +50,10 @@ class TradePriceTest {
         // (ReloadableServerResources.java:86-111), and an ItemStack of an unbound item throws
         // (Holder.java:268-270). These tests set every component they read, so empty defaults do.
         for (Item item : List.of(Items.ENCHANTED_BOOK, Items.EMERALD)) {
-            if (!item.builtInRegistryHolder().areComponentsBound()) {
-                item.builtInRegistryHolder().bindComponents(DataComponentMap.EMPTY);
+            ResourceKey<Item> key = BuiltInRegistries.ITEM.getResourceKey(item).orElseThrow();
+            Holder.Reference<Item> holder = BuiltInRegistries.ITEM.getOrThrow(key);
+            if (!holder.areComponentsBound()) {
+                holder.bindComponents(DataComponentMap.EMPTY);
             }
         }
     }
