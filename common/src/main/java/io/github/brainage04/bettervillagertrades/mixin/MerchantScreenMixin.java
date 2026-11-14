@@ -22,6 +22,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class MerchantScreenMixin extends AbstractContainerScreen<MerchantMenu> {
     @Shadow private int shopItem;
     @Unique private CommandDispatcher<?> betterVillagerTrades$commands;
+    @Unique private Button betterVillagerTrades$reroll;
+    @Unique private Button betterVillagerTrades$filter;
 
     private MerchantScreenMixin(MerchantMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
@@ -29,35 +31,25 @@ public abstract class MerchantScreenMixin extends AbstractContainerScreen<Mercha
 
     @Inject(method = "init", at = @At("TAIL"))
     private void betterVillagerTrades$addControls(CallbackInfo ci) {
-        ClientPacketListener connection = minecraft.getConnection();
-        if (connection == null) {
-            return;
-        }
-        betterVillagerTrades$commands = connection.getCommands();
         int controlsY = topPos + imageHeight + 4;
-        if (BetterVillagerTradesCommands.isAvailable(
-                connection.getCommands(), BetterVillagerTradesCommands.REROLL_PATH)) {
-            addRenderableWidget(
-                    Button.builder(
-                                    Component.translatable("bettervillagertrades.button.reroll"),
-                                    button ->
-                                            betterVillagerTrades$sendCommand(
-                                                    String.join(
-                                                            " ",
-                                                            BetterVillagerTradesCommands
-                                                                    .REROLL_PATH)))
-                            .bounds(leftPos + 5, controlsY, 96, 20)
-                            .build());
-        }
-        if (BetterVillagerTradesCommands.isAvailable(
-                connection.getCommands(), BetterVillagerTradesCommands.FILTER_TOGGLE_PATH)) {
-            addRenderableWidget(
-                    Button.builder(
-                                    Component.translatable("bettervillagertrades.button.filter"),
-                                    button -> betterVillagerTrades$toggleSelectedFilter())
-                            .bounds(leftPos + 105, controlsY, 96, 20)
-                            .build());
-        }
+        betterVillagerTrades$reroll =
+                Button.builder(
+                                Component.translatable("bettervillagertrades.button.reroll"),
+                                button ->
+                                        betterVillagerTrades$sendCommand(
+                                                String.join(
+                                                        " ",
+                                                        BetterVillagerTradesCommands.REROLL_PATH)))
+                        .bounds(leftPos + 5, controlsY, 96, 20)
+                        .build();
+        betterVillagerTrades$filter =
+                Button.builder(
+                                Component.translatable("bettervillagertrades.button.filter"),
+                                button -> betterVillagerTrades$toggleSelectedFilter())
+                        .bounds(leftPos + 105, controlsY, 96, 20)
+                        .build();
+        betterVillagerTrades$commands = null;
+        betterVillagerTrades$showControls();
     }
 
     // MerchantScreen inherits containerTick (AbstractContainerScreen.java:563 in 26.3; neither
@@ -66,11 +58,29 @@ public abstract class MerchantScreenMixin extends AbstractContainerScreen<Mercha
     @Override
     protected void containerTick() {
         super.containerTick();
+        betterVillagerTrades$showControls();
+    }
+
+    // Every command tree the server sends replaces the dispatcher (ClientPacketListener.java:1695).
+    // Only these two buttons are swapped: rebuildWidgets would also drop the buttons other mods
+    // added, since Fabric runs ScreenEvents.AFTER_INIT again only from init(II)V and resize
+    // (fabric-screen-api-v1 5.2.4, ScreenMixin).
+    @Unique
+    private void betterVillagerTrades$showControls() {
         ClientPacketListener connection = minecraft.getConnection();
-        // Every command tree the server sends replaces the dispatcher
-        // (ClientPacketListener.java:1695), and the controls were built from the one before.
-        if (connection != null && connection.getCommands() != betterVillagerTrades$commands) {
-            rebuildWidgets();
+        if (connection == null || connection.getCommands() == betterVillagerTrades$commands) {
+            return;
+        }
+        betterVillagerTrades$commands = connection.getCommands();
+        removeWidget(betterVillagerTrades$reroll);
+        removeWidget(betterVillagerTrades$filter);
+        if (BetterVillagerTradesCommands.isAvailable(
+                betterVillagerTrades$commands, BetterVillagerTradesCommands.REROLL_PATH)) {
+            addRenderableWidget(betterVillagerTrades$reroll);
+        }
+        if (BetterVillagerTradesCommands.isAvailable(
+                betterVillagerTrades$commands, BetterVillagerTradesCommands.FILTER_TOGGLE_PATH)) {
+            addRenderableWidget(betterVillagerTrades$filter);
         }
     }
 
