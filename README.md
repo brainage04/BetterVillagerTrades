@@ -2,7 +2,7 @@
 
 BetterVillagerTrades is a server-side Fabric and NeoForge mod for Minecraft 26.3 that improves villager trading without requiring modded clients.
 
-Any player outside spectator mode, also on a vanilla client, can reroll a villager by sneak-right-clicking it with an emerald in their main hand. The emerald is not consumed. This gesture never opens the trading screen, also for villagers that cannot be rerolled. Players with BetterVillagerTrades installed on the client also receive **Reroll trades** and **Toggle filter** buttons beneath the standard trading screen on servers that run BetterVillagerTrades. Each button appears only when the server lets the player use its command (`reroll` or `filter toggle`).
+Any player outside spectator mode, also on a vanilla client, can reroll a villager by sneak-right-clicking it with an emerald in their main hand. The emerald is not consumed. When the villager cannot be rerolled, as listed under [Rerolling trades](#rerolling-trades), the same gesture opens the villager's normal trading screen and still says why it could not reroll. Players with BetterVillagerTrades installed on the client also receive **Reroll trades** and **Toggle filter** buttons beneath the standard trading screen on servers that run BetterVillagerTrades. Each button appears only when the server lets the player use its command (`reroll` or `filter toggle`).
 
 ## Features
 
@@ -20,7 +20,7 @@ A villager can be rerolled only when all of these conditions are true:
 - None of its current offers match one of the requesting player's filters.
 - It is not trading with another player.
 
-A player can reroll at most once every 10 ticks (0.5 seconds). The server ignores attempts in between.
+A player can reroll at most once every 10 ticks (0.5 seconds). A gesture inside that cooldown does nothing: it neither rerolls nor opens trading, so a held sneak-use keeps rerolling at that rate.
 
 ### Per-player filters
 

@@ -31,10 +31,41 @@ public final class TradeRerollService {
                 || !player.getMainHandItem().is(Items.EMERALD)) {
             return InteractionResult.PASS;
         }
-        if (player instanceof ServerPlayer serverPlayer) {
-            rerollUnlessCoolingDown(serverPlayer, villager);
+        if (!(player instanceof ServerPlayer serverPlayer)) {
+            // Only the server holds the offers and the stored filters, so the client cannot decide
+            // and must leave the interaction to the attempt packet it sends.
+            return InteractionResult.PASS;
+        }
+        if (coolingDown(serverPlayer)) {
+            // A held use key sends one interaction every 4 ticks (Minecraft.java:1693,1965), so
+            // without this the sneak-click would reroll once and then open the screen 4 ticks
+            // later. The cooldown consumes the gesture, as it did before trading opened here.
+            return InteractionResult.SUCCESS;
+        }
+        // A refusal still sends its reason, as it did before the refusal earned a trading screen.
+        if (reroll(serverPlayer, villager, true)) {
+            startCooldown(serverPlayer);
+            announceReroll(serverPlayer);
+        } else {
+            openTrading(serverPlayer, villager, hand);
         }
         return InteractionResult.SUCCESS;
+    }
+
+    private static void openTrading(ServerPlayer player, Villager villager, InteractionHand hand) {
+        // NeoForge will not trade while the player is sneaking: its Villager.mobInteract returns
+        // the Mob result, which opens nothing, when Player.isSecondaryUseActive is true (the
+        // isSecondaryUseActive branch its patches add to Villager.mobInteract). Clearing the flag
+        // for this call opens trading through vanilla's own guards and screen on both loaders. The
+        // villager's interact never posts NeoForge's PlayerInteractEvent, so this cannot re-enter
+        // the mod.
+        boolean sneaking = player.isShiftKeyDown();
+        player.setShiftKeyDown(false);
+        try {
+            villager.interact(player, hand, villager.position());
+        } finally {
+            player.setShiftKeyDown(sneaking);
+        }
     }
 
     public static int rerollTradingVillager(ServerPlayer player) {
@@ -57,26 +88,45 @@ public final class TradeRerollService {
                             "Open a villager trading screen before using this reroll command."));
             return 0;
         }
-        return rerollUnlessCoolingDown(player, villager.get()) ? 1 : 0;
+        if (!rerollUnlessCoolingDown(player, villager.get(), true)) {
+            return 0;
+        }
+        announceReroll(player);
+        return 1;
     }
 
-    private static boolean rerollUnlessCoolingDown(ServerPlayer player, Villager villager) {
-        int tick = player.level().getServer().getTickCount();
-        Integer cooldownEnd = COOLDOWN_END_TICKS.get(player);
-        if (cooldownEnd != null && tick < cooldownEnd) {
+    private static boolean rerollUnlessCoolingDown(
+            ServerPlayer player, Villager villager, boolean announceDenial) {
+        if (coolingDown(player)) {
             return false;
         }
-        boolean rerolled = reroll(player, villager, true);
+        boolean rerolled = reroll(player, villager, announceDenial);
         if (rerolled) {
-            COOLDOWN_END_TICKS.put(player, tick + REROLL_COOLDOWN_TICKS);
+            startCooldown(player);
         }
         return rerolled;
     }
 
-    public static boolean reroll(ServerPlayer player, Villager villager, boolean sendFeedback) {
+    private static boolean coolingDown(ServerPlayer player) {
+        Integer cooldownEnd = COOLDOWN_END_TICKS.get(player);
+        return cooldownEnd != null && player.level().getServer().getTickCount() < cooldownEnd;
+    }
+
+    private static void startCooldown(ServerPlayer player) {
+        COOLDOWN_END_TICKS.put(
+                player, player.level().getServer().getTickCount() + REROLL_COOLDOWN_TICKS);
+    }
+
+    private static void announceReroll(ServerPlayer player) {
+        player.sendSystemMessage(
+                Component.translatableWithFallback(
+                        "bettervillagertrades.reroll.success", "Villager trades rerolled."));
+    }
+
+    public static boolean reroll(ServerPlayer player, Villager villager, boolean announceDenial) {
         Component denial = eligibilityFailure(player, villager);
         if (denial != null) {
-            if (sendFeedback) player.sendSystemMessage(denial);
+            if (announceDenial) player.sendSystemMessage(denial);
             return false;
         }
 
@@ -84,7 +134,7 @@ public final class TradeRerollService {
         Optional<TradeFilter> protectedBy =
                 PlayerTradeFilters.get(player.level().getServer()).protectedBy(player, offers);
         if (protectedBy.isPresent()) {
-            if (sendFeedback) {
+            if (announceDenial) {
                 player.sendSystemMessage(
                         Component.translatableWithFallback(
                                 "bettervillagertrades.reroll.protected",
@@ -96,7 +146,7 @@ public final class TradeRerollService {
 
         if (!(villager instanceof VillagerTradeReroller reroller)) {
             BetterVillagerTrades.LOGGER.error("Villager reroll mixin was not applied.");
-            if (sendFeedback)
+            if (announceDenial)
                 player.sendSystemMessage(
                         Component.translatableWithFallback(
                                 "bettervillagertrades.reroll.unavailable",
@@ -117,10 +167,6 @@ public final class TradeRerollService {
                     villager.canRestock());
             menu.broadcastChanges();
         }
-        if (sendFeedback)
-            player.sendSystemMessage(
-                    Component.translatableWithFallback(
-                            "bettervillagertrades.reroll.success", "Villager trades rerolled."));
         return true;
     }
 

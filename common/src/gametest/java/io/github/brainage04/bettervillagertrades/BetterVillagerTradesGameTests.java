@@ -33,6 +33,7 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.npc.villager.Villager;
 import net.minecraft.world.entity.npc.villager.VillagerData;
 import net.minecraft.world.entity.npc.villager.VillagerProfession;
+import net.minecraft.world.inventory.MerchantMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.Enchantment;
@@ -781,9 +782,12 @@ public final class BetterVillagerTradesGameTests {
             helper.assertTrue(
                     TradeRerollService.interact(player, villager, InteractionHand.MAIN_HAND)
                             .consumesAction(),
-                    "A gesture during the cooldown must still be consumed");
+                    "A gesture during the cooldown must be handled");
             helper.assertTrue(
                     offersPaper(villager), "A gesture during the cooldown must not reroll");
+            helper.assertTrue(
+                    villager.getTradingPlayer() == null,
+                    "A gesture during the cooldown must not open trading");
             villager.setTradingPlayer(player);
             helper.assertTrue(
                     villager.stillValid(player), "The command must be able to see the villager");
@@ -815,6 +819,60 @@ public final class BetterVillagerTradesGameTests {
         } finally {
             if (!closedLater) fixture.close();
         }
+    }
+
+    public static void sneakClickOnUnrerollableVillagerOpensTrading(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        try (GameTestPlayer fixture = GameTestPlayer.mock(helper)) {
+            ServerPlayer player = fixture.moveTo(helper, new BlockPos(1, 1, 2)).player();
+            player.setShiftKeyDown(true);
+            player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.EMERALD));
+
+            Villager experienced =
+                    createVillager(helper, level, VillagerProfession.LIBRARIAN, 2, 2, 1, 2);
+            experienced.setOffers(paperOffer());
+            fixture.clearMessages();
+            helper.assertTrue(
+                    TradeRerollService.interact(player, experienced, InteractionHand.MAIN_HAND)
+                            .consumesAction(),
+                    "The sneak-click on an experienced villager must be handled");
+            helper.assertTrue(offersPaper(experienced), "A refused gesture must keep the offers");
+            helper.assertTrue(
+                    toldWith(fixture, "bettervillagertrades.reroll.experienced"),
+                    "A gesture that opens trading must still say why it did not reroll");
+            helper.assertTrue(
+                    experienced.getTradingPlayer() == player,
+                    "The sneak-click must open normal trading on a villager it cannot reroll");
+            helper.assertTrue(
+                    player.containerMenu instanceof MerchantMenu,
+                    "Normal trading must show the merchant menu");
+            player.closeContainer();
+
+            Villager filteredOffers =
+                    createVillager(helper, level, VillagerProfession.LIBRARIAN, 1, 3, 1, 2);
+            filteredOffers.setOffers(paperOffer());
+            PlayerTradeFilters filters = PlayerTradeFilters.get(level.getServer());
+            try {
+                filters.add(player, TradeFilter.fromStack(new ItemStack(Items.PAPER)));
+                fixture.clearMessages();
+                helper.assertTrue(
+                        TradeRerollService.interact(
+                                        player, filteredOffers, InteractionHand.MAIN_HAND)
+                                .consumesAction(),
+                        "The sneak-click on a villager with a protected offer must be handled");
+                helper.assertTrue(
+                        offersPaper(filteredOffers), "A protected villager must keep its offers");
+                helper.assertTrue(
+                        toldWith(fixture, "bettervillagertrades.reroll.protected"),
+                        "A protected villager must still say why its trades cannot reroll");
+                helper.assertTrue(
+                        filteredOffers.getTradingPlayer() == player,
+                        "A villager whose offers are protected must open normal trading");
+            } finally {
+                filters.clear(player);
+            }
+        }
+        helper.succeed();
     }
 
     public static void savedFiltersSkipVanillaDataFixers(GameTestHelper helper) {
@@ -909,12 +967,15 @@ public final class BetterVillagerTradesGameTests {
     private static boolean deniedWith(GameTestPlayer fixture, Villager villager, String key) {
         fixture.clearMessages();
         return !TradeRerollService.reroll(fixture.player(), villager, true)
-                && fixture.messages().stream()
-                        .anyMatch(
-                                message ->
-                                        message.getContents()
-                                                        instanceof TranslatableContents contents
-                                                && contents.getKey().equals(key));
+                && toldWith(fixture, key);
+    }
+
+    private static boolean toldWith(GameTestPlayer fixture, String key) {
+        return fixture.messages().stream()
+                .anyMatch(
+                        message ->
+                                message.getContents() instanceof TranslatableContents contents
+                                        && contents.getKey().equals(key));
     }
 
     private static void deleteIfPresent(Path file) {

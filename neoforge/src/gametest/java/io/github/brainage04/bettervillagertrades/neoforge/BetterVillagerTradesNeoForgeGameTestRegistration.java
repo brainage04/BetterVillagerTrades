@@ -87,6 +87,10 @@ public final class BetterVillagerTradesNeoForgeGameTestRegistration {
                 () -> BetterVillagerTradesGameTests::rerollCooldownSpacesRepeatedRerolls);
         event.register(
                 BuiltInRegistries.TEST_FUNCTION.key(),
+                BetterVillagerTrades.of("sneak_click_on_unrerollable_villager_opens_trading"),
+                () -> BetterVillagerTradesGameTests::sneakClickOnUnrerollableVillagerOpensTrading);
+        event.register(
+                BuiltInRegistries.TEST_FUNCTION.key(),
                 BetterVillagerTrades.of("saved_filters_skip_vanilla_data_fixers"),
                 () -> BetterVillagerTradesGameTests::savedFiltersSkipVanillaDataFixers);
     }
