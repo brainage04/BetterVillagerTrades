@@ -10,10 +10,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
+import net.fabricmc.fabric.api.client.screen.v1.Screens;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.MerchantScreen;
+import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundCommandsPacket;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
@@ -45,6 +47,7 @@ public final class BetterVillagerTradesClientGameTest implements FabricClientGam
                 }
             };
     private static final List<String> CONTROL_LABELS = List.of("Reroll trades", "Toggle filter");
+    private static final String OTHER_MOD_LABEL = "Other mod";
 
     @Override
     public void runTest(ClientGameTestContext context) {
@@ -155,6 +158,10 @@ public final class BetterVillagerTradesClientGameTest implements FabricClientGam
 
                         // A permission change resends the command tree while the screen stays
                         // open (PlayerList.java:580), so the controls follow it without a reopen.
+                        // Fabric mods add their own buttons in ScreenEvents.AFTER_INIT through
+                        // Screens.getWidgets, which Fabric fires again only on init and resize,
+                        // so following the tree must leave those buttons in place.
+                        addOtherModButton(context);
                         sendCommandTree(context, commandTree("reroll"));
                         context.waitTick();
                         assertMerchantControls(
@@ -162,6 +169,7 @@ public final class BetterVillagerTradesClientGameTest implements FabricClientGam
                                 List.of("Reroll trades"),
                                 "Gaining reroll while trading must show Reroll trades without"
                                         + " reopening the screen.");
+                        assertOtherModButtonKept(context, "gaining reroll");
                         sendCommandTree(context, new RootCommandNode<>());
                         context.waitTick();
                         assertMerchantControls(
@@ -169,6 +177,7 @@ public final class BetterVillagerTradesClientGameTest implements FabricClientGam
                                 List.of(),
                                 "Losing reroll while trading must remove Reroll trades without"
                                         + " reopening the screen.");
+                        assertOtherModButtonKept(context, "losing reroll");
                     } finally {
                         server.runOnServer(BetterVillagerTradesShowcase::cleanup);
                     }
@@ -245,6 +254,33 @@ public final class BetterVillagerTradesClientGameTest implements FabricClientGam
                                     .toList();
                     if (!controls.equals(expected)) {
                         throw new AssertionError(message + " Shown: " + controls);
+                    }
+                });
+    }
+
+    private static void addOtherModButton(ClientGameTestContext context) {
+        context.runOnClient(
+                client -> {
+                    if (!(client.gui.screen() instanceof MerchantScreen screen)) {
+                        throw new AssertionError(
+                                "Expected the villager trading screen to be open.");
+                    }
+                    Screens.getWidgets(screen)
+                            .add(
+                                    Button.builder(Component.literal(OTHER_MOD_LABEL), button -> {})
+                                            .bounds(0, 0, 60, 20)
+                                            .build());
+                });
+    }
+
+    private static void assertOtherModButtonKept(ClientGameTestContext context, String change) {
+        context.runOnClient(
+                client -> {
+                    if (!merchantButtonLabels(client).contains(OTHER_MOD_LABEL)) {
+                        throw new AssertionError(
+                                "Another mod's trading-screen button must survive "
+                                        + change
+                                        + " while trading.");
                     }
                 });
     }
