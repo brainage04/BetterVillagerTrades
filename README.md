@@ -2,11 +2,11 @@
 
 BetterVillagerTrades is a server-side Fabric and NeoForge mod for Minecraft 26.3 that improves villager trading without requiring modded clients.
 
-Vanilla clients can sneak-right-click an eligible villager while holding an emerald. The emerald is not consumed. Players with BetterVillagerTrades installed on the client also receive **Reroll trades** and **Toggle filter** buttons beneath the standard trading screen.
+Any player outside spectator mode, also on a vanilla client, can reroll a villager by sneak-right-clicking it with an emerald in their main hand. The emerald is not consumed. This gesture never opens the trading screen, also for villagers that cannot be rerolled. Players with BetterVillagerTrades installed on the client also receive **Reroll trades** and **Toggle filter** buttons beneath the standard trading screen on servers that run BetterVillagerTrades. Each button appears only when the server lets the player use its command (`reroll` or `filter toggle`).
 
 ## Features
 
-- Newly generated enchanted-book and enchanted-item outputs use each enchantment's maximum level.
+- Newly generated enchanted-book and enchanted-item outputs are raised to each enchantment's maximum level. Levels above the maximum, which a datapack can give, stay as they are.
 - Players can reroll an eligible villager's offers.
 - Persistent, per-player filters prevent rerolls when the current offers contain a desired item or enchantment.
 
@@ -14,11 +14,13 @@ Vanilla clients can sneak-right-click an eligible villager while holding an emer
 
 A villager can be rerolled only when all of these conditions are true:
 
-- It is an adult with a trading profession, not a nitwit.
+- It is an adult whose profession has novice trades. Nitwits and unemployed villagers have none.
 - It is still a novice with zero trade experience.
 - None of its offers have been used.
 - None of its current offers match one of the requesting player's filters.
 - It is not trading with another player.
+
+A player can reroll at most once every 10 ticks (0.5 seconds). The server ignores attempts in between.
 
 ### Per-player filters
 

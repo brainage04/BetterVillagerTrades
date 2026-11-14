@@ -1,0 +1,16 @@
+workspaceDependencies {
+	siblingMaven('BrainageLibGameTest') {
+		coordinate.set("io.github.brainage04:brainagelib-gametest:${rootProject.brainagelib_version}")
+		siblingDirectory.set(rootProject.layout.projectDirectory.dir('../BrainageLib'))
+	}
+}
+
+dependencies {
+	// Test-only GameTest fixtures; productionRuntimeMods feeds the production GameTest runs, not the release JAR.
+	gametestImplementation "io.github.brainage04:brainagelib-gametest:${rootProject.brainagelib_version}"
+	productionRuntimeMods "io.github.brainage04:brainagelib-gametest:${rootProject.brainagelib_version}"
+}
+
+// mod_side=server keeps the server-only build layout, which makes MinecraftModConventions list the mod as
+// server-only on CurseForge. Installing it on the client is optional and adds the trading-screen buttons.
+modPublishing.curseforge.client = true
