@@ -12,7 +12,7 @@ jobs:
   distribution:
     permissions:
       contents: write
-    uses: brainage04/MinecraftModConventions/.github/workflows/reusable-multiloader-release.yml@v3.4.0
+    uses: brainage04/MinecraftModConventions/.github/workflows/reusable-multiloader-release.yml@v3.5.0
     with:
       # brainagelib-gametest is not on Maven Central, so the build compiles it from this BrainageLib
       # commit (release/2.0.0). Switch to BrainageLib@v2.0.0 once that tag exists, and move the pin
