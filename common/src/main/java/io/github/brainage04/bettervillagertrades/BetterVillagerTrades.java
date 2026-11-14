@@ -167,7 +167,8 @@ public final class BetterVillagerTrades {
      * level and prices it in the same place, so a level raised here is also the level the price is
      * worked out at (EnchantRandomlyFunction.java:91-98).
      */
-    public static int tradeLevel(RandomSource random, int minLevel, int maxLevel, boolean maximize) {
+    public static int tradeLevel(
+            RandomSource random, int minLevel, int maxLevel, boolean maximize) {
         // Drawn even when it is replaced, so the draws after it, the price among them, stay those
         // vanilla would make.
         int level = Mth.nextInt(random, minLevel, maxLevel);

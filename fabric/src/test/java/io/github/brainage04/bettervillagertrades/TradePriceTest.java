@@ -61,8 +61,7 @@ class TradePriceTest {
     Arbitrary<Roll> rolls() {
         Arbitrary<Integer> minLevel = Arbitraries.integers().between(1, 5);
         Arbitrary<Integer> span = Arbitraries.integers().between(0, 254);
-        return Combinators.combine(
-                        Arbitraries.longs(), Arbitraries.of(true, false), minLevel, span)
+        return Combinators.combine(Arbitraries.longs(), Arbitraries.of(true, false), minLevel, span)
                 .as(
                         (seed, xoroshiro, min, extra) ->
                                 new Roll(seed, xoroshiro, min, Math.min(255, min + extra)));
@@ -71,8 +70,7 @@ class TradePriceTest {
     @Property
     void aMaximizedTradeCostsWhatVanillaChargesForTheMaximumLevel(@ForAll("rolls") Roll roll) {
         RandomSource random = roll.random();
-        int level =
-                BetterVillagerTrades.tradeLevel(random, roll.minLevel(), roll.maxLevel(), true);
+        int level = BetterVillagerTrades.tradeLevel(random, roll.minLevel(), roll.maxLevel(), true);
         int cost = vanillaAdditionalCost(random, level);
 
         RandomSource vanilla = roll.random();
