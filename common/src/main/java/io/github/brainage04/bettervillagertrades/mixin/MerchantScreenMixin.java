@@ -1,5 +1,6 @@
 package io.github.brainage04.bettervillagertrades.mixin;
 
+import com.mojang.brigadier.CommandDispatcher;
 import io.github.brainage04.bettervillagertrades.BetterVillagerTradesCommands;
 import io.github.brainage04.bettervillagertrades.TradeFilter;
 import net.minecraft.client.gui.components.Button;
@@ -20,6 +21,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(MerchantScreen.class)
 public abstract class MerchantScreenMixin extends AbstractContainerScreen<MerchantMenu> {
     @Shadow private int shopItem;
+    @Unique private CommandDispatcher<?> betterVillagerTrades$commands;
 
     private MerchantScreenMixin(MerchantMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
@@ -31,6 +33,7 @@ public abstract class MerchantScreenMixin extends AbstractContainerScreen<Mercha
         if (connection == null) {
             return;
         }
+        betterVillagerTrades$commands = connection.getCommands();
         int controlsY = topPos + imageHeight + 4;
         if (BetterVillagerTradesCommands.isAvailable(
                 connection.getCommands(), BetterVillagerTradesCommands.REROLL_PATH)) {
@@ -54,6 +57,18 @@ public abstract class MerchantScreenMixin extends AbstractContainerScreen<Mercha
                                     button -> betterVillagerTrades$toggleSelectedFilter())
                             .bounds(leftPos + 105, controlsY, 96, 20)
                             .build());
+        }
+    }
+
+    // MerchantScreen has no containerTick of its own to inject into, so this adds the override.
+    @Override
+    protected void containerTick() {
+        super.containerTick();
+        ClientPacketListener connection = minecraft.getConnection();
+        // Every command tree the server sends replaces the dispatcher
+        // (ClientPacketListener.java:1695), and the controls were built from the one before.
+        if (connection != null && connection.getCommands() != betterVillagerTrades$commands) {
+            rebuildWidgets();
         }
     }
 
