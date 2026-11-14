@@ -3,6 +3,7 @@
 	"package": "io.github.brainage04.bettervillagertrades.mixin",
 	"compatibilityLevel": "JAVA_25",
 	"mixins": [
+		"EnchantRandomlyFunctionMixin",
 		"VillagerMixin"
 	],
 	"client": [

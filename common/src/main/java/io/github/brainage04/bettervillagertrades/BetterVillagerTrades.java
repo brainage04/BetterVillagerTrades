@@ -14,6 +14,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.npc.villager.Villager;
 import net.minecraft.world.entity.npc.villager.VillagerProfession;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.ItemEnchantments;
 import net.minecraft.world.item.trading.MerchantOffer;
@@ -142,6 +143,23 @@ public final class BetterVillagerTrades {
         if (modified) {
             stack.set(componentType, mutable.toImmutable());
         }
+    }
+
+    /**
+     * The level a trade's enchantment is rolled at. Vanilla draws the level and prices it in the
+     * same place, so a level raised here is also the level the price is worked out at
+     * (EnchantRandomlyFunction.java:91-98). The roll happens while the trade's stack is still a
+     * plain book, which EnchantRandomlyFunction turns into an enchanted book with stored
+     * enchantments (EnchantRandomlyFunction.java:91-96, EnchantmentHelper.java:80-82), so both book
+     * items select the book rule.
+     */
+    public static int maxTradeLevel(
+            ItemStack stack, ServerLevel level, int rolledLevel, int maxLevel) {
+        GameRule<Boolean> rule =
+                stack.is(Items.BOOK) || stack.is(Items.ENCHANTED_BOOK)
+                        ? MAX_ENCHANTED_BOOK_TRADES
+                        : MAX_ENCHANTED_ITEM_TRADES;
+        return level.getGameRules().get(rule) ? maxLevel : rolledLevel;
     }
 
     public static void maximizeNewVillagerOffers(
