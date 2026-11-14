@@ -60,7 +60,9 @@ public abstract class MerchantScreenMixin extends AbstractContainerScreen<Mercha
         }
     }
 
-    // MerchantScreen has no containerTick of its own to inject into, so this adds the override.
+    // MerchantScreen inherits containerTick (AbstractContainerScreen.java:563 in 26.3; neither
+    // MerchantScreen.java nor NeoForge's patch of it declares one), so there is nothing to inject
+    // into and this adds the override.
     @Override
     protected void containerTick() {
         super.containerTick();
