@@ -2,7 +2,6 @@ package io.github.brainage04.bettervillagertrades.mixin;
 
 import io.github.brainage04.bettervillagertrades.BetterVillagerTrades;
 import net.minecraft.core.Holder;
-import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantment;
@@ -43,11 +42,9 @@ public abstract class EnchantRandomlyFunctionMixin {
             ItemStack stack,
             Holder<Enchantment> enchantment,
             LootContext context) {
-        // Drawn even when it is replaced, so the draws after it stay those vanilla would make.
-        int level = Mth.nextInt(random, minInclusive, maxInclusive);
-        if (!context.hasParameter(LootContextParams.ADDITIONAL_COST_COMPONENT_ALLOWED)) {
-            return level;
-        }
-        return BetterVillagerTrades.maxTradeLevel(stack, context.getLevel(), level, maxInclusive);
+        boolean maximize =
+                context.hasParameter(LootContextParams.ADDITIONAL_COST_COMPONENT_ALLOWED)
+                        && BetterVillagerTrades.maximizesTradeLevel(stack, context.getLevel());
+        return BetterVillagerTrades.tradeLevel(random, minInclusive, maxInclusive, maximize);
     }
 }

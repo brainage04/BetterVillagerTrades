@@ -11,6 +11,8 @@ import net.minecraft.core.component.DataComponents;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.Mth;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.npc.villager.Villager;
 import net.minecraft.world.entity.npc.villager.VillagerProfession;
 import net.minecraft.world.item.ItemStack;
@@ -146,20 +148,30 @@ public final class BetterVillagerTrades {
     }
 
     /**
-     * The level a trade's enchantment is rolled at. Vanilla draws the level and prices it in the
-     * same place, so a level raised here is also the level the price is worked out at
-     * (EnchantRandomlyFunction.java:91-98). The roll happens while the trade's stack is still a
-     * plain book, which EnchantRandomlyFunction turns into an enchanted book with stored
-     * enchantments (EnchantRandomlyFunction.java:91-96, EnchantmentHelper.java:80-82), so both book
-     * items select the book rule.
+     * Whether a trade's enchantment on {@code stack} is rolled at its maximum level. The roll
+     * happens while the trade's stack is still a plain book, which EnchantRandomlyFunction turns
+     * into an enchanted book with stored enchantments (EnchantRandomlyFunction.java:91-96,
+     * EnchantmentHelper.java:80-82), so both book items select the book rule.
      */
-    public static int maxTradeLevel(
-            ItemStack stack, ServerLevel level, int rolledLevel, int maxLevel) {
+    public static boolean maximizesTradeLevel(ItemStack stack, ServerLevel level) {
         GameRule<Boolean> rule =
                 stack.is(Items.BOOK) || stack.is(Items.ENCHANTED_BOOK)
                         ? MAX_ENCHANTED_BOOK_TRADES
                         : MAX_ENCHANTED_ITEM_TRADES;
-        return level.getGameRules().get(rule) ? maxLevel : rolledLevel;
+        return level.getGameRules().get(rule);
+    }
+
+    /**
+     * The level a trade's enchantment is rolled at, in place of vanilla's {@code
+     * Mth.nextInt(random, minLevel, maxLevel)} (EnchantRandomlyFunction.java:91). Vanilla draws the
+     * level and prices it in the same place, so a level raised here is also the level the price is
+     * worked out at (EnchantRandomlyFunction.java:91-98).
+     */
+    public static int tradeLevel(RandomSource random, int minLevel, int maxLevel, boolean maximize) {
+        // Drawn even when it is replaced, so the draws after it, the price among them, stay those
+        // vanilla would make.
+        int level = Mth.nextInt(random, minLevel, maxLevel);
+        return maximize ? maxLevel : level;
     }
 
     public static void maximizeNewVillagerOffers(
