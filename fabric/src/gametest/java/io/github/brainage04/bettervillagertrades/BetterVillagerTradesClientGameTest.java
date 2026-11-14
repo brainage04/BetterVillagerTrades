@@ -152,6 +152,23 @@ public final class BetterVillagerTradesClientGameTest implements FabricClientGam
                                 List.of(),
                                 "A server without the bettervillagertrades command must not get"
                                         + " the trading-screen controls.");
+
+                        // A permission change resends the command tree while the screen stays
+                        // open (PlayerList.java:580), so the controls follow it without a reopen.
+                        sendCommandTree(context, commandTree("reroll"));
+                        context.waitTick();
+                        assertMerchantControls(
+                                context,
+                                List.of("Reroll trades"),
+                                "Gaining reroll while trading must show Reroll trades without"
+                                        + " reopening the screen.");
+                        sendCommandTree(context, new RootCommandNode<>());
+                        context.waitTick();
+                        assertMerchantControls(
+                                context,
+                                List.of(),
+                                "Losing reroll while trading must remove Reroll trades without"
+                                        + " reopening the screen.");
                     } finally {
                         server.runOnServer(BetterVillagerTradesShowcase::cleanup);
                     }
