@@ -16,6 +16,7 @@ import net.jqwik.api.constraints.IntRange;
 import net.minecraft.SharedConstants;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderSet;
+import net.minecraft.core.component.DataComponentMap;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.resources.Identifier;
@@ -23,6 +24,7 @@ import net.minecraft.server.Bootstrap;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.EquipmentSlotGroup;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.Enchantment;
@@ -42,6 +44,14 @@ class TradePriceTest {
     static {
         SharedConstants.tryDetectVersion();
         Bootstrap.bootStrap();
+        // Item default components are bound only when a server loads its resources
+        // (ReloadableServerResources.java:86-111), and an ItemStack of an unbound item throws
+        // (Holder.java:268-270). These tests set every component they read, so empty defaults do.
+        for (Item item : List.of(Items.ENCHANTED_BOOK, Items.EMERALD)) {
+            if (!item.builtInRegistryHolder().areComponentsBound()) {
+                item.builtInRegistryHolder().bindComponents(DataComponentMap.EMPTY);
+            }
+        }
     }
 
     record Roll(long seed, boolean xoroshiro, int minLevel, int maxLevel) {
