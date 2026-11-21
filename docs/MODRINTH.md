@@ -10,7 +10,7 @@ Nothing but a tag push starts the workflow. The tag is `v` plus `mod_version` fr
 
 Preparation clones BrainageLib at the commit in `prepare_siblings` and publishes it to `build/local-repo`, because `brainagelib-gametest` is not on Maven Central. It then runs `./gradlew clean build` and looks in `build/libs` for two files. The Fabric release is `bettervillagertrades-1.2.0.jar`, built from `archives_base_name` and `mod_version`. The NeoForge release is the single file matching `bettervillagertrades-neoforge-*.jar`. If that pattern finds nothing, or finds two files, the release fails.
 
-The sibling pin is `BrainageLib@d783aa0a761aa6523fbf3ed291d7b5ca288fbffc`, the `release/2.0.0` commit. It has to move together with `brainagelib_version` in `gradle.properties`, which is `2.0.0`. A bump of one without the other releases against the wrong library.
+The sibling pin is `BrainageLib@d783aa0a761aa6523fbf3ed291d7b5ca288fbffc`, the `release/2.0.0` commit. It has to move together with `brainagelib_version` in `gradle.properties`, which is `2.0.0`. A bump of one without the other fails the build at dependency resolution.
 
 Both files go onto the GitHub release. Its title is `BetterVillagerTrades v1.2.0`, because this repository passes `release_name` as `BetterVillagerTrades` followed by the tag. Its body is the annotated tag message, or GitHub's generated notes when the tag has no message. A hyphen in the tag, `v1.2.0-rc1` for example, marks the release as a prerelease.
 
@@ -82,8 +82,12 @@ Version dependencies come from the `depends`, `recommends`, `suggests`, `conflic
 
 `fabric.mod.json` sets `environment` to `*` and declares no client entrypoint, which on its own would mark the project server-side only. `.modrinth/project.json` overrides that with `client_side` set to `optional` and `server_side` set to `required`, so Modrinth lists the client install as optional. The NeoForge version lists no dependencies at all, because this repository has no `.modrinth/neoforge-dependencies.json` for the NeoForge job to read.
 
+## Release notes
+
+The Modrinth version changelog is the same annotated tag notes the GitHub release uses, because the workflow passes the same release body to every destination.
+
 ## Running the tasks locally
 
-`./gradlew :fabric:publishModrinth -PpublishModrinth=true -PmodPublishingDryRun=true` runs the same tasks without writing to Modrinth. The dry run logs what each step would do and writes no remote state.
+`./gradlew :fabric:publishModrinth -PpublishModrinth=true -PmodPublishingDryRun=true` runs the publish tasks without writing to Modrinth. It does not run the project or icon sync, and the dry run logs what each step would do instead of sending it.
 
 To cut the tag, follow `docs/RELEASE.md`.
